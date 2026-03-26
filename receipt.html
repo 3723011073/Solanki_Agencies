@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Receipt | Solanki Agencies</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .receipt-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 700px;
+    margin: 40px auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 20px;
+  }
+
+  .receipt-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .receipt-status-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #f0fdf4;
+    border: 3px solid #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+  }
+
+  .receipt-title {
+    color: #0b3d91;
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+  }
+
+  .receipt-subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+  }
+
+  .receipt-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
+
+  .receipt-section-title {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 16px;
+    font-size: 1rem;
+  }
+
+  .receipt-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    color: #374151;
+  }
+
+  .receipt-info-label {
+    color: #6b7280;
+  }
+
+  .receipt-info-value {
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .receipt-order-id {
+    background: #fff3cd;
+    padding: 12px;
+    border-left: 4px solid #fbbf24;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    monospace;
+  }
+
+  .receipt-items {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .receipt-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .receipt-item:last-child {
+    border-bottom: none;
+  }
+
+  .receipt-item-name {
+    flex: 1;
+    color: #374151;
+  }
+
+  .receipt-item-qty {
+    color: #6b7280;
+    margin: 0 16px;
+    text-align: center;
+    min-width: 30px;
+  }
+
+  .receipt-item-price {
+    text-align: right;
+    color: #0b3d91;
+    font-weight: 600;
+    min-width: 80px;
+  }
+
+  .receipt-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px;
+    background: linear-gradient(135deg, #0b3d91 0%, #1a5dc1 100%);
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-top: 16px;
+  }
+
+  .receipt-footer {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-primary {
+    flex: 1;
+    padding: 14px;
+    background: linear-gradient(135deg, #0b3d91 0%, #1a5dc1 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(11,61,145,0.3);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(11,61,145,0.4);
+  }
+
+  .btn-secondary {
+    flex: 1;
+    padding: 14px;
+    background: #e5e7eb;
+    color: #374151;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-secondary:hover {
+    background: #d1d5db;
+  }
+
+  .print-button {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .print-button button {
+    padding: 10px 20px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #374151;
+    transition: all 0.3s ease;
+  }
+
+  .print-button button:hover {
+    background: #f3f4f6;
+  }
+
+  .error-message {
+    color: #dc2626;
+    padding: 20px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  @media print {
+    body {
+      background: #fff;
+    }
+    .print-button,
+    .action-buttons {
+      display: none;
+    }
+    .receipt-container {
+      box-shadow: none;
+      border: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .receipt-container {
+      padding: 20px;
+      margin: 20px;
+    }
+
+    .receipt-item {
+      flex-direction: column;
+    }
+
+    .receipt-item-qty,
+    .receipt-item-price {
+      text-align: left;
+      margin: 0;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<header class="site-header">
+<div class="container header-inner">
+<a href="index.html" class="brand">Solanki Agencies</a>
+<nav class="main-nav">
+<a href="index.html">Home</a>
+<a href="about.html">About</a>
+<a href="products.html">Products</a>
+<a href="why.html">Why Us</a>
+<a href="booking.html" class="cart-icon" style="display:none;">🛒</a>
+<a href="history.html" style="display:none;">My Bookings</a>
+<a href="login.html" id="loginLink" style="display:none;">Login</a>
+<a href="login.html#signup" id="signupLink" style="display:none;">Signup</a>
+<a href="#" id="logoutLink" style="display:none;color:#ff6b35;" onclick="logoutUser(event)">Logout</a>
+<span id="userNameDisplay" style="display:none;padding:6px 12px;background:#0b3d91;color:#fff;border-radius:20px;font-size:0.85rem;font-weight:600;"></span>
+<a href="admin-dashboard.html" id="adminLink" style="display:none;">Add Product</a>
+</nav>
+</div>
+</header>
+
+<main style="padding:20px 0; background:#f3f4f6;">
+
+<div class="receipt-container">
+
+<div class="receipt-header">
+<div class="receipt-status">
+<div class="receipt-status-icon">✓</div>
+</div>
+<h1 class="receipt-title">Order Confirmed!</h1>
+<p class="receipt-subtitle">Your payment has been processed successfully</p>
+</div>
+
+<div class="print-button">
+<button onclick="window.print()">🖨️ Print Receipt</button>
+</div>
+
+<div id="receiptContent" style="display:none;">
+
+<div class="receipt-order-id" id="orderIdDisplay"></div>
+
+<div class="receipt-section">
+<div class="receipt-section-title">Order Details</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Order Date:</span>
+<span class="receipt-info-value" id="orderDate"></span>
+</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Payment Method:</span>
+<span class="receipt-info-value" id="paymentMethod"></span>
+</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Status:</span>
+<span class="receipt-info-value" style="color:#16a34a;">✓ Completed</span>
+</div>
+</div>
+
+<div class="receipt-section">
+<div class="receipt-section-title">Billing Information</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Name:</span>
+<span class="receipt-info-value" id="customerName"></span>
+</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Email:</span>
+<span class="receipt-info-value" id="customerEmail"></span>
+</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Phone:</span>
+<span class="receipt-info-value" id="customerPhone"></span>
+</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Address:</span>
+<span class="receipt-info-value" id="customerAddress"></span>
+</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">City:</span>
+<span class="receipt-info-value" id="customerCity"></span>
+</div>
+<div class="receipt-info-row">
+<span class="receipt-info-label">Postal Code:</span>
+<span class="receipt-info-value" id="customerPostal"></span>
+</div>
+</div>
+
+<div class="receipt-section">
+<div class="receipt-section-title">Order Items</div>
+
+<div class="receipt-items" id="itemsList"></div>
+
+<div class="receipt-total">
+<span>Total Amount:</span>
+<span id="totalAmount"></span>
+</div>
+</div>
+
+<div class="receipt-footer">
+<p>Thank you for your order! You will receive a confirmation email shortly.</p>
+<p>For support, contact us at <a href="mailto:info@solankiagencies.com" style="color:#0b3d91;text-decoration:underline;">info@solankiagencies.com</a></p>
+</div>
+
+</div>
+
+<div id="errorContainer" class="error-message" style="display:none;"></div>
+
+<div class="action-buttons">
+<a href="products.html" class="btn-secondary">Continue Shopping</a>
+<a href="history.html" class="btn-primary">View All Orders</a>
+</div>
+
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="container footer-inner">
+<div><strong>Solanki Agencies</strong></div>
+<div><div>Email: <a href="mailto:info@solankiagencies.com">info@solankiagencies.com</a></div></div>
+<div style="font-size:0.85rem;color:#6b7280;margin-top:10px;">🔒 Secure Transaction | Order Receipt</div>
+</div>
+</footer>
+
+<script src="script.js" defer></script>
+<script>
+
+function enforceAuthForReceipt() {
+  const { token } = getAuth();
+  if (!token) {
+    window.location.href = 'login.html';
+  }
+}
+
+async function loadReceipt() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const orderId = urlParams.get('orderId');
+
+  if (!orderId) {
+    showError('No order found. Invalid receipt link.');
+    return;
+  }
+
+  const { token } = getAuth();
+
+  try {
+    const response = await fetch(`/api/payment/receipt/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showError(data.error || 'Could not load receipt details');
+      return;
+    }
+
+    displayReceipt(data);
+
+  } catch (error) {
+    console.error('Error loading receipt:', error);
+    showError('An error occurred while loading your receipt');
+  }
+}
+
+function displayReceipt(payment) {
+  // Display order ID
+  document.getElementById('orderIdDisplay').textContent = `Order ID: ${payment.orderId}`;
+
+  // Display order details
+  const dateObj = new Date(payment.timestamp);
+  document.getElementById('orderDate').textContent = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('paymentMethod').textContent = capitalizePaymentMethod(payment.paymentMethod);
+
+  // Display customer info
+  document.getElementById('customerName').textContent = payment.customer.name;
+  document.getElementById('customerEmail').textContent = payment.customer.email;
+  document.getElementById('customerPhone').textContent = payment.customer.phone;
+  document.getElementById('customerAddress').textContent = payment.customer.address;
+  document.getElementById('customerCity').textContent = payment.customer.city || '-';
+  document.getElementById('customerPostal').textContent = payment.customer.zipcode || '-';
+
+  // Display items
+  let itemsHtml = '';
+  payment.items.forEach(item => {
+    const itemTotal = (item.price * item.quantity);
+    itemsHtml += `
+      <div class="receipt-item">
+        <div class="receipt-item-name">${item.name}</div>
+        <div class="receipt-item-qty">x${item.quantity}</div>
+        <div class="receipt-item-price">₹${itemTotal.toLocaleString()}</div>
+      </div>
+    `;
+  });
+  document.getElementById('itemsList').innerHTML = itemsHtml;
+
+  // Display total
+  document.getElementById('totalAmount').textContent = '₹' + payment.totalAmount.toLocaleString();
+
+  // Show the receipt content
+  document.getElementById('receiptContent').style.display = 'block';
+}
+
+function capitalizePaymentMethod(method) {
+  const methodMap = {
+    'card': 'Credit/Debit Card',
+    'upi': 'UPI / Google Pay',
+    'netbanking': 'Net Banking'
+  };
+  return methodMap[method] || method;
+}
+
+function showError(message) {
+  document.getElementById('errorContainer').textContent = message;
+  document.getElementById('errorContainer').style.display = 'block';
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  enforceAuthForReceipt();
+  loadReceipt();
+  updateNavForAuth();
+});
+
+</script>
+
+</body>
+</html>

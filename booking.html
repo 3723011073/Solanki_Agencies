@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Booking & Payment — Solanki Agencies</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">Solanki Agencies</a>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="products.html">Products</a>
+          <a href="why.html">Why Us</a>
+        <a href="history.html" style="display:none;">My Bookings</a>
+        <a href="login.html" id="loginLink" style="display:none;">Login</a>
+        <a href="login.html#signup" id="signupLink" style="display:none;">Signup</a>
+        <a href="admin-dashboard.html" id="adminLink" style="display:none;">Add Product</a>
+        <a href="#" id="logoutLink" style="display:none;color:#ff6b35;" onclick="logoutUser(event)">Logout</a>
+        <span id="userNameDisplay" style="display:none;padding:6px 12px;background:#0b3d91;color:#fff;border-radius:20px;font-size:0.85rem;font-weight:600;"></span>
+        <a href="booking.html" class="cart-icon" style="display:none;" title="View Cart"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="padding:28px 16px 60px;">
+    <h1>Shopping Cart</h1>
+    <div class="booking-summary">
+      <ul id="booking-list" class="booking-list"></ul>
+      <div id="booking-summary" style="margin-top:12px;font-weight:700;"></div>
+    </div>
+
+    <div id="emptyCartMessage" style="display:none;text-align:center;padding:40px 0;color:#6b7280;">
+      <p>Your cart is empty</p>
+      <a href="products.html" style="color:#0b3d91;text-decoration:underline;font-weight:600;">Continue Shopping</a>
+    </div>
+
+    <div id="proceedToPaymentContainer" style="display:none;margin-top:30px;max-width:700px;">
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary" type="button" onclick="proceedToPayment()" style="flex:1;padding:12px;background:linear-gradient(135deg, #0b3d91 0%, #1a5dc1 100%);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:1rem;">Proceed to Payment</button>
+        <button type="button" class="btn outline" onclick="clearBooking()" style="flex:1;padding:12px;background:#e5e7eb;color:#374151;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Clear Cart</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>Solanki Agencies</strong>
+      </div>
+      <div>
+        <div>Phone: +91-XXXXXXXXXX</div>
+        <div>Email: <a href="mailto:info@solankiagencies.com">info@solankiagencies.com</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  function proceedToPayment() {
+    const cart = getCart();
+    if (cart.length === 0) {
+      alert('Your cart is empty');
+      return;
+    }
+    window.location.href = 'payment.html';
+  }
+
+  function updateCartDisplay() {
+    const cart = getCart();
+    const emptyMessage = document.getElementById('emptyCartMessage');
+    const proceedContainer = document.getElementById('proceedToPaymentContainer');
+
+    if (cart.length === 0) {
+      emptyMessage.style.display = 'block';
+      proceedContainer.style.display = 'none';
+    } else {
+      emptyMessage.style.display = 'none';
+      proceedContainer.style.display = 'block';
+    }
+
+    displayBooking();
+  }
+
+  // Enforce auth on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    enforceAuthForPages();
+    updateNavForAuth();
+    updateCartDisplay();
+  });
+  </script>
+</body>
+</html>

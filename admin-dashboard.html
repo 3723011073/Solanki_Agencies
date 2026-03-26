@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Solanki Agencies</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="site-header">
+<div class="container header-inner">
+<a href="index.html" class="brand">Solanki Agencies</a>
+<nav class="main-nav">
+<span style="color:#0b3d91;font-weight:600;">Admin Dashboard</span>
+<a href="index.html">Home</a>
+<a href="about.html">About</a>
+<a href="products.html">Products</a>
+<a href="why.html">Why Us</a>
+<a href="booking.html">Booking</a>
+<a href="history.html">My Bookings</a>
+<a href="#" id="logoutLink" style="display:inline-block;color:#fff;text-decoration:none;padding:8px 16px;background:#ff4757;color:#fff;border-radius:6px;cursor:pointer;margin-left:28px;" onclick="logoutUser(event)">Logout</a>
+</nav>
+</div>
+</header>
+
+<main style="padding:40px 0;">
+<div class="container">
+
+<h1 style="color:#0b3d91;margin-bottom:30px;font-size:2rem;">Admin Dashboard</h1>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:40px;">
+
+<div style="background:#fff;padding:32px;border-radius:14px;box-shadow:0 4px 15px rgba(0,0,0,0.08);border:1px solid #e5e7eb;">
+
+<h2 style="color:#0b3d91;margin-bottom:24px;font-size:1.5rem;">Add New Product</h2>
+
+<form id="addProductForm" style="display:grid;gap:16px;">
+
+<div>
+<label style="display:block;margin-bottom:8px;font-weight:600;color:#1f2937;">Product Name *</label>
+<input type="text" id="productName" placeholder="e.g., Premium Coffee Mug" required style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;">
+</div>
+
+<div>
+<label style="display:block;margin-bottom:8px;font-weight:600;color:#1f2937;">Category *</label>
+<select id="productCategory" required style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;">
+<option value="">Select Category</option>
+<option value="Crockery & Dinnerware">Crockery & Dinnerware</option>
+<option value="Glassware">Glassware</option>
+<option value="Cutlery">Cutlery</option>
+<option value="Kitchenware">Kitchenware</option>
+<option value="Serving Equipment">Serving Equipment</option>
+<option value="Buffet & Display Ware">Buffet & Display Ware</option>
+</select>
+</div>
+
+<div>
+<label style="display:block;margin-bottom:8px;font-weight:600;color:#1f2937;">Price (₹) *</label>
+<input type="number" id="productPrice" placeholder="0" min="0" step="10" required style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;">
+</div>
+
+<div>
+<label style="display:block;margin-bottom:8px;font-weight:600;color:#1f2937;">Description</label>
+<textarea id="productDesc" placeholder="Product description..." rows="3" style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;resize:vertical;"></textarea>
+</div>
+
+<div>
+<label style="display:block;margin-bottom:8px;font-weight:600;color:#1f2937;">Stock</label>
+<input type="number" id="productStock" placeholder="100" min="0" value="100" style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;">
+</div>
+
+<div>
+<label style="display:block;margin-bottom:8px;font-weight:600;color:#1f2937;">Image URL</label>
+<input type="url" id="productImage" placeholder="https://..." style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;">
+</div>
+
+<button type="submit" style="background:linear-gradient(135deg, #0b3d91 0%, #1a5dc1 100%);color:#fff;padding:14px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:1rem;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(11,61,145,0.3);margin-top:10px;">Add Product</button>
+
+<div id="addProductMessage" style="text-align:center;margin-top:10px;font-weight:600;display:none;"></div>
+
+</form>
+
+</div>
+
+<div style="background:#fff;padding:32px;border-radius:14px;box-shadow:0 4px 15px rgba(0,0,0,0.08);border:1px solid #e5e7eb;">
+
+<h2 style="color:#0b3d91;margin-bottom:24px;font-size:1.5rem;">Recent Products</h2>
+
+<div id="recentProducts" style="display:grid;gap:16px;max-height:400px;overflow-y:auto;">
+<p style="color:#6b7280;">Loading products...</p>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="container footer-inner">
+<div><strong>Solanki Agencies</strong></div>
+<div><div>Email: <a href="mailto:info@solankiagencies.com">info@solankiagencies.com</a></div></div>
+</div>
+</footer>
+
+<script>
+function checkAuth() {
+  const adminToken = localStorage.getItem('adminToken');
+  const userToken = localStorage.getItem('authToken');
+  const user = localStorage.getItem('authUser') ? JSON.parse(localStorage.getItem('authUser')) : null;
+  const isAdmin = Boolean(user && user.isAdmin);
+
+  const hasAccess = Boolean(adminToken) || (Boolean(userToken) && isAdmin);
+  if (!hasAccess) {
+    window.location.href = 'index.html';
+  }
+}
+checkAuth();
+</script>
+
+</body>
+</html>

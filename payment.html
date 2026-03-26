@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Payment | Solanki Agencies</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .payment-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 900px;
+    margin: 40px auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .payment-header {
+    color: #0b3d91;
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #0b3d91;
+    padding-bottom: 20px;
+  }
+
+  .payment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .payment-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .payment-section-title {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+  }
+
+  .order-summary {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .order-item:last-child {
+    border-bottom: none;
+  }
+
+  .order-item-name {
+    flex: 1;
+    color: #374151;
+  }
+
+  .order-item-qty {
+    color: #6b7280;
+    margin: 0 12px;
+  }
+
+  .order-item-price {
+    color: #0b3d91;
+    font-weight: 600;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  .order-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 0;
+    margin-top: 12px;
+    border-top: 2px solid #0b3d91;
+    font-weight: 700;
+    color: #0b3d91;
+    font-size: 1.2rem;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #0b3d91;
+    box-shadow: 0 0 0 3px rgba(11,61,145,0.1);
+  }
+
+  .payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .payment-method {
+    position: relative;
+  }
+
+  .payment-method input[type="radio"] {
+    display: none;
+  }
+
+  .payment-method-label {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fff;
+  }
+
+  .payment-method input[type="radio"]:checked + .payment-method-label {
+    border-color: #0b3d91;
+    background: #f0f6ff;
+  }
+
+  .payment-method-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    font-weight: 700;
+    color: #0b3d91;
+  }
+
+  .payment-method input[type="radio"]:checked ~ .payment-method-icon {
+    background: #0b3d91;
+    color: #fff;
+  }
+
+  .payment-method-details {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .payment-method-name {
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .payment-method-desc {
+    color: #6b7280;
+    font-size: 0.85rem;
+  }
+
+  .card-fields {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    display: none;
+  }
+
+  .card-fields.active {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .card-field-full {
+    grid-column: 1 / -1;
+  }
+
+  .card-field-group {
+    display: flex;
+    gap: 12px;
+  }
+
+  .card-field-group > div {
+    flex: 1;
+  }
+
+  .upi-fields {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    display: none;
+  }
+
+  .upi-fields.active {
+    display: block;
+  }
+
+  .security-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: #16a34a;
+    font-weight: 500;
+  }
+
+  .security-badge::before {
+    content: "🔒";
+    font-size: 1.2rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .btn-primary {
+    flex: 1;
+    padding: 14px;
+    background: linear-gradient(135deg, #0b3d91 0%, #1a5dc1 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(11,61,145,0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(11,61,145,0.4);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-secondary {
+    flex: 1;
+    padding: 14px;
+    background: #e5e7eb;
+    color: #374151;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-secondary:hover {
+    background: #d1d5db;
+  }
+
+  .processing-spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .error-message {
+    color: #dc2626;
+    padding: 12px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .success-message {
+    color: #16a34a;
+    padding: 12px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .payment-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .payment-container {
+      padding: 20px;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
+
+    .card-fields.active {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<header class="site-header">
+<div class="container header-inner">
+<a href="index.html" class="brand">Solanki Agencies</a>
+<nav class="main-nav">
+<a href="index.html">Home</a>
+<a href="about.html">About</a>
+<a href="products.html">Products</a>
+<a href="why.html">Why Us</a>
+<a href="booking.html" class="cart-icon" style="display:none;">🛒</a>
+<a href="history.html" style="display:none;">My Bookings</a>
+<a href="login.html" id="loginLink" style="display:none;">Login</a>
+<a href="login.html#signup" id="signupLink" style="display:none;">Signup</a>
+<a href="#" id="logoutLink" style="display:none;color:#ff6b35;" onclick="logoutUser(event)">Logout</a>
+<span id="userNameDisplay" style="display:none;padding:6px 12px;background:#0b3d91;color:#fff;border-radius:20px;font-size:0.85rem;font-weight:600;"></span>
+<a href="admin-dashboard.html" id="adminLink" style="display:none;">Add Product</a>
+</nav>
+</div>
+</header>
+
+<main style="padding:20px 0; background:#f3f4f6;">
+
+<div class="payment-container">
+
+<h1 class="payment-header">🔒 Secure Payment</h1>
+
+<div class="security-badge">
+All transactions are encrypted with 256-bit SSL encryption
+</div>
+
+<div id="errorMessage" class="error-message"></div>
+<div id="successMessage" class="success-message"></div>
+
+<div class="payment-grid">
+
+<!-- Order Summary Section -->
+<div class="payment-section">
+<h2 class="payment-section-title">Order Summary</h2>
+
+<div class="order-summary" id="orderSummary">
+<div style="color:#6b7280;text-align:center;padding:40px 0;">Loading order details...</div>
+</div>
+
+</div>
+
+<!-- Payment Details Section -->
+<div class="payment-section">
+
+<h2 class="payment-section-title">Billing Information</h2>
+
+<form id="paymentForm">
+
+<div class="form-group">
+<label for="fullName">Full Name *</label>
+<input type="text" id="fullName" name="fullName" placeholder="Your full name" required>
+</div>
+
+<div class="form-group">
+<label for="email">Email Address *</label>
+<input type="email" id="email" name="email" placeholder="your@email.com" required>
+</div>
+
+<div class="form-group">
+<label for="phone">Phone Number *</label>
+<input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required>
+</div>
+
+<div class="form-group">
+<label for="address">Address *</label>
+<textarea id="address" name="address" placeholder="Street address" rows="2" required></textarea>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+<div class="form-group">
+<label for="city">City *</label>
+<input type="text" id="city" name="city" placeholder="City" required>
+</div>
+
+<div class="form-group">
+<label for="zipcode">Postal Code *</label>
+<input type="text" id="zipcode" name="zipcode" placeholder="Postal Code" required>
+</div>
+</div>
+
+<div class="form-group">
+<label for="gst">GST Number (Optional)</label>
+<input type="text" id="gst" name="gst" placeholder="GST IN - if applicable">
+</div>
+
+<h2 class="payment-section-title" style="margin-top:30px;">Payment Method</h2>
+
+<div class="payment-methods">
+
+<!-- Credit/Debit Card -->
+<div class="payment-method">
+<input type="radio" id="cardMethod" name="paymentMethod" value="card" checked>
+<label for="cardMethod" class="payment-method-label">
+<div class="payment-method-icon" style="background: #e5e7eb; color: #0b3d91;">💳</div>
+<div class="payment-method-details">
+<div class="payment-method-name">Credit / Debit Card</div>
+<div class="payment-method-desc">Visa, Mastercard, Rupay</div>
+</div>
+</label>
+
+<div class="card-fields active" id="cardFields">
+<div class="form-group card-field-full">
+<label for="cardNumber">Card Number</label>
+<input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" pattern="[0-9\s]{15,19}">
+</div>
+
+<div class="form-group">
+<label for="expiryDate">Expiry Date</label>
+<input type="text" id="expiryDate" placeholder="MM/YY" maxlength="5" pattern="\d{1,2}/\d{2}">
+</div>
+
+<div class="form-group">
+<label for="cvv">CVV</label>
+<input type="password" id="cvv" placeholder="•••" maxlength="4" pattern="\d{3,4}">
+</div>
+
+<div class="form-group card-field-full">
+<label for="cardName">Cardholder Name</label>
+<input type="text" id="cardName" placeholder="Name on card">
+</div>
+</div>
+</div>
+
+<!-- UPI -->
+<div class="payment-method">
+<input type="radio" id="upiMethod" name="paymentMethod" value="upi">
+<label for="upiMethod" class="payment-method-label">
+<div class="payment-method-icon" style="background: #e5e7eb; color: #0b3d91;">📱</div>
+<div class="payment-method-details">
+<div class="payment-method-name">UPI / Google Pay</div>
+<div class="payment-method-desc">Fast & Secure</div>
+</div>
+</label>
+
+<div class="upi-fields" id="upiFields">
+<div class="form-group">
+<label for="upiId">UPI ID</label>
+<input type="text" id="upiId" placeholder="yourname@upi">
+</div>
+</div>
+</div>
+
+<!-- Net Banking -->
+<div class="payment-method">
+<input type="radio" id="netbankingMethod" name="paymentMethod" value="netbanking">
+<label for="netbankingMethod" class="payment-method-label">
+<div class="payment-method-icon" style="background: #e5e7eb; color: #0b3d91;">🏦</div>
+<div class="payment-method-details">
+<div class="payment-method-name">Net Banking</div>
+<div class="payment-method-desc">All major banks supported</div>
+</div>
+</label>
+</div>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+<div class="action-buttons">
+<button type="button" class="btn-secondary" onclick="goBackToBooking()">Back to Cart</button>
+<button type="button" class="btn-primary" id="payButton" onclick="processPayment()">
+<span class="processing-spinner" id="spinner"></span>
+Process Payment
+</button>
+</div>
+
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="container footer-inner">
+<div><strong>Solanki Agencies</strong></div>
+<div><div>Email: <a href="mailto:info@solankiagencies.com">info@solankiagencies.com</a></div></div>
+<div style="font-size:0.85rem;color:#6b7280;margin-top:10px;">🔒 Secure Transaction | SSL Encrypted | PCI Compliant</div>
+</div>
+</footer>
+
+<script src="script.js" defer></script>
+<script>
+
+// Payment page specific functions
+function enforceAuthForPayment() {
+  const { token } = getAuth();
+  if (!token) {
+    alert('Please login to proceed with payment.');
+    window.location.href = 'login.html';
+  }
+}
+
+function displayOrderSummary() {
+  const cart = getCart();
+  const orderSummaryDiv = document.getElementById('orderSummary');
+
+  if (!cart || cart.length === 0) {
+    orderSummaryDiv.innerHTML = '<div style="color:#dc2626;text-align:center;padding:40px 0;">Your cart is empty. <a href="products.html">Continue Shopping</a></div>';
+    return;
+  }
+
+  let total = 0;
+  let html = '';
+
+  cart.forEach(item => {
+    const itemTotal = item.price * item.quantity;
+    total += itemTotal;
+    html += `
+      <div class="order-item">
+        <div class="order-item-name">${item.name}</div>
+        <div class="order-item-qty">x${item.quantity}</div>
+        <div class="order-item-price">₹${itemTotal.toLocaleString()}</div>
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="order-total">
+      <span>Total Amount:</span>
+      <span>₹${total.toLocaleString()}</span>
+    </div>
+  `;
+
+  orderSummaryDiv.innerHTML = html;
+}
+
+function setupPaymentMethodListeners() {
+  const cardMethodRadio = document.getElementById('cardMethod');
+  const upiMethodRadio = document.getElementById('upiMethod');
+  const cardFields = document.getElementById('cardFields');
+  const upiFields = document.getElementById('upiFields');
+
+  cardMethodRadio.addEventListener('change', function() {
+    if (this.checked) {
+      cardFields.classList.add('active');
+      upiFields.classList.remove('active');
+    }
+  });
+
+  upiMethodRadio.addEventListener('change', function() {
+    if (this.checked) {
+      upiFields.classList.add('active');
+      cardFields.classList.remove('active');
+    }
+  });
+}
+
+function validatePaymentForm() {
+  const form = document.getElementById('paymentForm');
+  const requiredFields = form.querySelectorAll('[required]');
+  const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+  let isValid = true;
+
+  requiredFields.forEach(field => {
+    if (!field.value.trim()) {
+      isValid = false;
+    }
+  });
+
+  if (paymentMethod === 'card') {
+    const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+    const expiry = document.getElementById('expiryDate').value;
+    const cvv = document.getElementById('cvv').value;
+    const cardName = document.getElementById('cardName').value;
+
+    if (!cardNumber || cardNumber.length < 13) {
+      isValid = false;
+      showError('Please enter a valid card number');
+    }
+    if (!expiry || !/^\d{1,2}\/\d{2}$/.test(expiry)) {
+      isValid = false;
+      showError('Please enter expiry date in MM/YY format');
+    }
+    if (!cvv || !/^\d{3,4}$/.test(cvv)) {
+      isValid = false;
+      showError('Please enter a valid CVV');
+    }
+    if (!cardName) {
+      isValid = false;
+      showError('Please enter cardholder name');
+    }
+  }
+
+  if (paymentMethod === 'upi') {
+    const upiId = document.getElementById('upiId').value;
+    if (!upiId || !/@/.test(upiId)) {
+      isValid = false;
+      showError('Please enter a valid UPI ID');
+    }
+  }
+
+  return isValid;
+}
+
+function showError(message) {
+  const errorDiv = document.getElementById('errorMessage');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  setTimeout(() => {
+    errorDiv.style.display = 'none';
+  }, 5000);
+}
+
+function showSuccess(message) {
+  const successDiv = document.getElementById('successMessage');
+  successDiv.textContent = message;
+  successDiv.style.display = 'block';
+}
+
+async function processPayment() {
+  const cart = getCart();
+  
+  if (!cart || cart.length === 0) {
+    showError('Your cart is empty');
+    return;
+  }
+
+  if (!validatePaymentForm()) {
+    return;
+  }
+
+  const { token, user } = getAuth();
+  const payButton = document.getElementById('payButton');
+  const spinner = document.getElementById('spinner');
+  const form = document.getElementById('paymentForm');
+
+  // Disable button and show spinner
+  payButton.disabled = true;
+  spinner.style.display = 'inline-block';
+
+  const paymentData = {
+    customer: {
+      name: document.getElementById('fullName').value,
+      email: document.getElementById('email').value,
+      phone: document.getElementById('phone').value,
+      address: document.getElementById('address').value,
+      city: document.getElementById('city').value,
+      zipcode: document.getElementById('zipcode').value,
+      gst: document.getElementById('gst').value
+    },
+    paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value,
+    items: cart,
+    totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  };
+
+  try {
+    const response = await fetch('/api/payment/process', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(paymentData)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      showError(result.error || 'Payment processing failed');
+      payButton.disabled = false;
+      spinner.style.display = 'none';
+      return;
+    }
+
+    // Payment successful
+    showSuccess('Payment processed successfully!');
+    
+    // Store order details
+    const order = {
+      orderId: result.orderId,
+      date: new Date().toISOString(),
+      customer: paymentData.customer,
+      items: cart,
+      totalAmount: paymentData.totalAmount,
+      paymentMethod: paymentData.paymentMethod,
+      status: 'completed'
+    };
+
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    orders.push(order);
+    localStorage.setItem('orders', JSON.stringify(orders));
+
+    // Clear cart
+    localStorage.removeItem('cart');
+
+    // Redirect to success page
+    setTimeout(() => {
+      window.location.href = `receipt.html?orderId=${result.orderId}`;
+    }, 2000);
+
+  } catch (error) {
+    console.error('Payment error:', error);
+    showError('An error occurred while processing payment. Please try again.');
+    payButton.disabled = false;
+    spinner.style.display = 'none';
+  }
+}
+
+function goBackToBooking() {
+  window.location.href = 'booking.html';
+}
+
+// Format card number input
+document.addEventListener('DOMContentLoaded', function() {
+  enforceAuthForPayment();
+  displayOrderSummary();
+  setupPaymentMethodListeners();
+  updateNavForAuth();
+
+  // Card number formatting
+  const cardNumberInput = document.getElementById('cardNumber');
+  if (cardNumberInput) {
+    cardNumberInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\s/g, '');
+      let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+      e.target.value = formattedValue;
+    });
+  }
+
+  // Expiry date formatting
+  const expiryInput = document.getElementById('expiryDate');
+  if (expiryInput) {
+    expiryInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length >= 2) {
+        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+      }
+      e.target.value = value;
+    });
+  }
+});
+
+</script>
+
+</body>
+</html>

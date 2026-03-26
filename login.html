@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | Solanki Agencies</title>
+<link rel="stylesheet" href="style.css">
+<script src="script.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html">Solanki Agencies</a>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="products.html">Products</a>
+      <a href="why.html">Why Us</a>
+      <a href="history.html">My Bookings</a>
+      <a href="login.html" id="loginLink">Login</a>
+      <a href="signup.html" id="signupLink">Signup</a>
+      <a href="admin-dashboard.html" id="adminLink" style="display:none;color:#ff6b35;">Add Product</a>
+      <a href="#" id="logoutLink" style="display:none;color:#ff6b35;" onclick="logoutUser(event)">Logout</a>
+      <span id="userNameDisplay" style="color:#fff;margin-left:12px;font-weight:600;"></span>
+    </nav>
+  </div>
+</header>
+
+<main class="container" style="padding:40px 16px;">
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button type="button" id="showLoginBtn" class="auth-tab active">Login</button>
+      <button type="button" id="showSignupBtn" class="auth-tab">Sign Up</button>
+    </div>
+
+    <div id="loginPanel" class="auth-panel active">
+      <h1>Login</h1>
+      <p>Enter email and password to continue.</p>
+      <form id="loginForm">
+        <input type="email" name="email" placeholder="Enter email" required>
+        <input type="password" name="password" placeholder="Enter password" required>
+        <button type="submit" class="btn primary" style="width:100%;">Login</button>
+      </form>
+      <p style="margin-top:12px;">New user? <a href="login.html#signup">Sign up now</a></p>
+      <div id="loginError" class="error-message"></div>
+    </div>
+
+    <div id="signupPanel" class="auth-panel">
+      <h1>Sign Up</h1>
+      <p>Create your account with email and password.</p>
+      <form id="signupForm">
+        <input type="text" name="name" placeholder="Enter name (optional)">
+        <input type="email" name="email" placeholder="Enter email" required>
+        <input type="password" name="password" placeholder="Enter password" required>
+        <input type="password" name="confirmPassword" placeholder="Confirm password" required>
+        <button type="submit" class="btn primary" style="width:100%;">Create Account</button>
+      </form>
+      <p style="margin-top:12px;">Already registered? <a href="login.html#login">Login now</a></p>
+      <div id="signupError" class="error-message"></div>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>
