@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login | Solanki Agencies</title>
-<link rel="stylesheet" href="style.css">
-<script src="script.js" defer></script>
+<link rel="stylesheet" href="style.css?v=20260402-1">
+<script src="script.js?v=20260402-1" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -37,8 +37,12 @@
       <h1>Login</h1>
       <p>Enter email and password to continue.</p>
       <form id="loginForm">
-        <input type="email" name="email" placeholder="Enter email" required>
-        <input type="password" name="password" placeholder="Enter password" required>
+        <input type="email" name="email" placeholder="Enter email" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" title="Please enter a valid email address.">
+        <div style="position:relative;">
+          <input id="loginPassword" type="password" name="password" placeholder="Enter password" required pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" title="Password must be at least 8 characters and include uppercase, lowercase, number, and special character." style="padding-right:80px;">
+          <button type="button" data-toggle-password="loginPassword" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:#0b3d91;cursor:pointer;font-weight:600;">Show</button>
+        </div>
+        <small style="display:block;color:#6b7280;margin:-4px 0 10px;">Password must contain uppercase, lowercase, number, special character, and 8+ characters.</small>
         <button type="submit" class="btn primary" style="width:100%;">Login</button>
       </form>
       <p style="margin-top:12px;">New user? <a href="login.html#signup">Sign up now</a></p>
@@ -50,9 +54,16 @@
       <p>Create your account with email and password.</p>
       <form id="signupForm">
         <input type="text" name="name" placeholder="Enter name (optional)">
-        <input type="email" name="email" placeholder="Enter email" required>
-        <input type="password" name="password" placeholder="Enter password" required>
-        <input type="password" name="confirmPassword" placeholder="Confirm password" required>
+        <input type="email" name="email" placeholder="Enter email" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" title="Please enter a valid email address.">
+        <div style="position:relative;">
+          <input id="signupPassword" type="password" name="password" placeholder="Enter password" required pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" title="Password must be at least 8 characters and include uppercase, lowercase, number, and special character." style="padding-right:80px;">
+          <button type="button" data-toggle-password="signupPassword" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:#0b3d91;cursor:pointer;font-weight:600;">Show</button>
+        </div>
+        <div style="position:relative;">
+          <input id="signupConfirmPassword" type="password" name="confirmPassword" placeholder="Confirm password" required pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" title="Confirm password must match the same strong password format." style="padding-right:80px;">
+          <button type="button" data-toggle-password="signupConfirmPassword" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:#0b3d91;cursor:pointer;font-weight:600;">Show</button>
+        </div>
+        <small style="display:block;color:#6b7280;margin:-4px 0 10px;">Use a strong password: 8+ characters, upper/lowercase, number, and special character.</small>
         <button type="submit" class="btn primary" style="width:100%;">Create Account</button>
       </form>
       <p style="margin-top:12px;">Already registered? <a href="login.html#login">Login now</a></p>

@@ -9,8 +9,8 @@
 <title>Products | Solanki Agencies</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260324-1">
-<script src="script.js?v=20260324-1" defer></script>
+<link rel="stylesheet" href="style.css?v=20260408-2">
+<script src="script.js?v=20260408-2" defer></script>
 
 </head>
 
@@ -64,6 +64,26 @@
 </ul>
 </div>
 
+<div class="advanced-filters" id="advanced-filters">
+	<input type="search" id="product-search" placeholder="Search by name, description, category">
+	<input type="number" id="min-price" placeholder="Min price" min="0">
+	<input type="number" id="max-price" placeholder="Max price" min="0">
+	<select id="sort-products">
+		<option value="default">Sort: Default</option>
+		<option value="price-low">Price: Low to High</option>
+		<option value="price-high">Price: High to Low</option>
+		<option value="name-asc">Name: A to Z</option>
+		<option value="name-desc">Name: Z to A</option>
+	</select>
+	<label class="stock-filter">
+		<input type="checkbox" id="in-stock-only">
+		In stock only
+	</label>
+	<button type="button" class="category-btn" id="clear-filters">Reset</button>
+</div>
+
+<p class="products-count" id="products-count"></p>
+
 <div class="products-grid" id="products-container"></div>
 
 </div>
@@ -75,7 +95,11 @@
 <footer class="site-footer">
 <div class="container footer-inner">
 <p>&copy; 2024 Solanki Agencies. All rights reserved.</p>
-<a href="mailto:info@solankiagencies.com">info@solankiagencies.com</a>
+<div>
+	<div>Email: <a href="mailto:solankiagencies07@gmail.com">solankiagencies07@gmail.com</a></div>
+	<div>Phone: <a href="tel:+917276164935">7276164935</a></div>
+	<div>Location: Pune, Maharashtra</div>
+</div>
 </div>
 </footer>
 

@@ -74,7 +74,8 @@
 
 <div>
 <label style="display:block;margin-bottom:8px;font-weight:600;color:#1f2937;">Image URL</label>
-<input type="url" id="productImage" placeholder="https://..." style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;">
+<input type="text" id="productImage" placeholder="/images/my-screenshot.jpg or https://..." style="width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.95rem;font-family:inherit;">
+<small style="display:block;margin-top:6px;color:#6b7280;">Tip: Save PDF screenshots in your images folder and use a path like /images/your-file.jpg</small>
 </div>
 
 <button type="submit" style="background:linear-gradient(135deg, #0b3d91 0%, #1a5dc1 100%);color:#fff;padding:14px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:1rem;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(11,61,145,0.3);margin-top:10px;">Add Product</button>
@@ -104,7 +105,7 @@
 <footer class="site-footer">
 <div class="container footer-inner">
 <div><strong>Solanki Agencies</strong></div>
-<div><div>Email: <a href="mailto:info@solankiagencies.com">info@solankiagencies.com</a></div></div>
+<div><div>Email: <a href="mailto:solankiagencies07@gmail.com">solankiagencies07@gmail.com</a></div><div>Phone: <a href="tel:+917276164935">7276164935</a></div><div>Location: Pune, Maharashtra</div></div>
 </div>
 </footer>
 
@@ -121,6 +122,151 @@ function checkAuth() {
   }
 }
 checkAuth();
+
+function getAdminAuthHeader() {
+  const adminToken = localStorage.getItem('adminToken');
+  const userToken = localStorage.getItem('authToken');
+  const user = localStorage.getItem('authUser') ? JSON.parse(localStorage.getItem('authUser')) : null;
+  const token = adminToken || (user && user.isAdmin ? userToken : null);
+  return token ? { Authorization: `Bearer ${token}` } : null;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function showAddMessage(message, ok) {
+  const el = document.getElementById('addProductMessage');
+  el.style.display = 'block';
+  el.style.color = ok ? '#16a34a' : '#dc2626';
+  el.textContent = message;
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+async function loadRecentProducts() {
+  const container = document.getElementById('recentProducts');
+  container.innerHTML = '<p style="color:#6b7280;">Loading products...</p>';
+
+  try {
+    const res = await fetch('/api/products');
+    const products = await res.json();
+    if (!res.ok) throw new Error('Could not load products');
+
+    const recent = [...products].sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 20);
+    if (!recent.length) {
+      container.innerHTML = '<p style="color:#6b7280;">No products found.</p>';
+      return;
+    }
+
+    container.innerHTML = recent.map(p => `
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;">
+        <img src="${escapeHtml(p.image || '/images/01_plate.svg')}" alt="${escapeHtml(p.name)}" style="width:56px;height:56px;object-fit:contain;background:#f8fafc;border-radius:8px;" onerror="this.src='/images/01_plate.svg'">
+        <div>
+          <div style="font-weight:600;color:#1f2937;font-size:0.92rem;">${escapeHtml(p.name)}</div>
+          <div style="font-size:0.83rem;color:#6b7280;">ID: ${p.id} | ₹${Number(p.price || 0).toLocaleString()}</div>
+        </div>
+        <button data-id="${p.id}" class="remove-product-btn" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-weight:600;">Remove</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = '<p style="color:#dc2626;">Could not load products.</p>';
+  }
+}
+
+async function removeProduct(id) {
+  const headers = getAdminAuthHeader();
+  if (!headers) {
+    alert('Session expired. Please login again.');
+    window.location.href = 'admin.html';
+    return;
+  }
+
+  const confirmDelete = confirm('Remove this product? This cannot be undone.');
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'DELETE',
+      headers
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not remove product');
+    await loadRecentProducts();
+    showAddMessage('Product removed successfully.', true);
+  } catch (err) {
+    showAddMessage(err.message || 'Failed to remove product.', false);
+  }
+}
+
+document.getElementById('recentProducts').addEventListener('click', (event) => {
+  const btn = event.target.closest('.remove-product-btn');
+  if (!btn) return;
+  const id = Number(btn.getAttribute('data-id'));
+  if (id) removeProduct(id);
+});
+
+document.getElementById('addProductForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const headers = getAdminAuthHeader();
+  if (!headers) {
+    alert('Session expired. Please login again.');
+    window.location.href = 'admin.html';
+    return;
+  }
+
+  const payload = {
+    name: document.getElementById('productName').value.trim(),
+    category: document.getElementById('productCategory').value,
+    price: Number(document.getElementById('productPrice').value || 0),
+    desc: document.getElementById('productDesc').value.trim(),
+    stock: Number(document.getElementById('productStock').value || 0),
+    image: document.getElementById('productImage').value.trim()
+  };
+
+  try {
+    const res = await fetch('/api/products/add', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not add product');
+
+    event.target.reset();
+    document.getElementById('productStock').value = '100';
+    await loadRecentProducts();
+    showAddMessage('Product added successfully.', true);
+  } catch (err) {
+    showAddMessage(err.message || 'Failed to add product.', false);
+  }
+});
+
+async function logoutUser(event) {
+  if (event) event.preventDefault();
+  const adminToken = localStorage.getItem('adminToken');
+  if (adminToken) {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+    } catch (e) {
+      // Ignore network errors during logout cleanup.
+    }
+  }
+  localStorage.removeItem('adminToken');
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('authUser');
+  window.location.href = 'admin.html';
+}
+
+loadRecentProducts();
 </script>
 
 </body>

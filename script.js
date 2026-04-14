@@ -213,9 +213,21 @@ async function submitLogin(event) {
   const form = event.target;
   const email = form.email.value.trim();
   const password = form.password.value.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
   if (!email || !password) {
     alert('Please enter both email and password.');
+    return;
+  }
+
+  if (!emailRegex.test(email)) {
+    alert('Please enter a valid email with @ and domain (example: name@email.com).');
+    return;
+  }
+
+  if (!passwordRegex.test(password)) {
+    alert('Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.');
     return;
   }
 
@@ -246,11 +258,24 @@ async function submitSignup(event) {
   const email = form.email.value.trim();
   const password = form.password.value.trim();
   const confirm = form.confirmPassword.value.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
   if (!email || !password || !confirm) {
     alert('Please complete all required fields.');
     return;
   }
+
+  if (!emailRegex.test(email)) {
+    alert('Please enter a valid email with @ and domain (example: name@email.com).');
+    return;
+  }
+
+  if (!passwordRegex.test(password)) {
+    alert('Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.');
+    return;
+  }
+
   if (password !== confirm) {
     alert('Password and confirm password do not match.');
     return;
@@ -312,6 +337,18 @@ function attachAuthForms() {
   if (signupForm) {
     signupForm.addEventListener('submit', submitSignup);
   }
+
+  const toggleButtons = document.querySelectorAll('[data-toggle-password]');
+  toggleButtons.forEach(button => {
+    button.addEventListener('click', function () {
+      const targetId = button.getAttribute('data-toggle-password');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.textContent = show ? 'Hide' : 'Show';
+    });
+  });
 }
 
 function initUiEnhancements() {
@@ -364,6 +401,32 @@ document.addEventListener('DOMContentLoaded', function () {
   const container = document.getElementById("products-container");
   if (container) {
     let allProducts = [];
+    let currentCategory = "all";
+
+    const filterContainer = document.getElementById("categories-filter");
+    const searchInput = document.getElementById("product-search");
+    const minPriceInput = document.getElementById("min-price");
+    const maxPriceInput = document.getElementById("max-price");
+    const sortSelect = document.getElementById("sort-products");
+    const inStockOnlyInput = document.getElementById("in-stock-only");
+    const clearFiltersBtn = document.getElementById("clear-filters");
+    const productsCount = document.getElementById("products-count");
+
+    function normalizeText(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function updateProductsCount(count) {
+      if (!productsCount) return;
+      productsCount.textContent = `${count} product${count === 1 ? "" : "s"} found`;
+    }
+
+    function setActiveCategory(category) {
+      currentCategory = category;
+      document.querySelectorAll(".category-btn[data-category]").forEach(button => {
+        button.classList.toggle("active", button.getAttribute("data-category") === category);
+      });
+    }
 
     fetch("/api/products")
       .then(response => {
@@ -381,27 +444,46 @@ document.addEventListener('DOMContentLoaded', function () {
           return;
         }
 
-        const categories = [...new Set(data.map(p => p.category))];
-        const filterContainer = document.getElementById("categories-filter");
+        const categories = [...new Set(data.map(p => p.category))].sort((a, b) => a.localeCompare(b));
 
-        categories.forEach(category => {
-          const li = document.createElement("li");
-          const btn = document.createElement("button");
-          btn.className = "category-btn";
-          btn.textContent = category;
-          btn.setAttribute("data-category", category);
-          btn.addEventListener("click", function() {
-            filterProducts(this.getAttribute("data-category"));
-            document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
-            this.classList.add("active");
-          });
-          li.appendChild(btn);
-          if (filterContainer) {
+        if (filterContainer) {
+          filterContainer.innerHTML = '<li><button class="category-btn active" data-category="all">All Products</button></li>';
+          categories.forEach(category => {
+            const li = document.createElement("li");
+            const btn = document.createElement("button");
+            btn.className = "category-btn";
+            btn.textContent = category;
+            btn.setAttribute("data-category", category);
+            li.appendChild(btn);
             filterContainer.appendChild(li);
-          }
-        });
+          });
 
-        displayProducts(data);
+          filterContainer.addEventListener("click", function(event) {
+            const button = event.target.closest(".category-btn[data-category]");
+            if (!button) return;
+            setActiveCategory(button.getAttribute("data-category"));
+            applyFilters();
+          });
+        }
+
+        if (searchInput) searchInput.addEventListener("input", applyFilters);
+        if (minPriceInput) minPriceInput.addEventListener("input", applyFilters);
+        if (maxPriceInput) maxPriceInput.addEventListener("input", applyFilters);
+        if (sortSelect) sortSelect.addEventListener("change", applyFilters);
+        if (inStockOnlyInput) inStockOnlyInput.addEventListener("change", applyFilters);
+        if (clearFiltersBtn) {
+          clearFiltersBtn.addEventListener("click", function() {
+            if (searchInput) searchInput.value = "";
+            if (minPriceInput) minPriceInput.value = "";
+            if (maxPriceInput) maxPriceInput.value = "";
+            if (sortSelect) sortSelect.value = "default";
+            if (inStockOnlyInput) inStockOnlyInput.checked = false;
+            setActiveCategory("all");
+            applyFilters();
+          });
+        }
+
+        applyFilters();
       })
       .catch(error => {
         console.error("Product loading error:", error);
@@ -411,13 +493,21 @@ document.addEventListener('DOMContentLoaded', function () {
     function displayProducts(productsToDisplay) {
       container.innerHTML = "";
 
+      if (!productsToDisplay.length) {
+        container.innerHTML = "<p class='no-results'>No products match these filters.</p>";
+        updateProductsCount(0);
+        return;
+      }
+
+      updateProductsCount(productsToDisplay.length);
+
       productsToDisplay.forEach((product) => {
         const card = document.createElement("article");
         card.classList.add("product-card");
 
         // Create image container wrapper
         const imgWrapper = document.createElement("div");
-        imgWrapper.classList.add("product-image-box");
+        imgWrapper.classList.add("product-image-box", "catalog-image-box");
         const img = document.createElement("img");
         img.src = product.image;
         img.alt = product.name;
@@ -456,13 +546,40 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
-    function filterProducts(category) {
-      if (category === "all") {
-        displayProducts(allProducts);
-      } else {
-        const filtered = allProducts.filter(p => p.category === category);
-        displayProducts(filtered);
-      }
+    function applyFilters() {
+      const searchTerm = normalizeText(searchInput ? searchInput.value : "");
+      const minPrice = minPriceInput && minPriceInput.value !== "" ? Number(minPriceInput.value) : null;
+      const maxPrice = maxPriceInput && maxPriceInput.value !== "" ? Number(maxPriceInput.value) : null;
+      const sortBy = sortSelect ? sortSelect.value : "default";
+      const inStockOnly = Boolean(inStockOnlyInput && inStockOnlyInput.checked);
+
+      let filtered = allProducts.filter(product => {
+        const categoryMatch = currentCategory === "all" || product.category === currentCategory;
+        if (!categoryMatch) return false;
+
+        if (searchTerm) {
+          const searchable = `${product.name} ${product.desc || ""} ${product.category || ""}`.toLowerCase();
+          if (!searchable.includes(searchTerm)) return false;
+        }
+
+        const price = Number(product.price || 0);
+        if (minPrice !== null && !Number.isNaN(minPrice) && price < minPrice) return false;
+        if (maxPrice !== null && !Number.isNaN(maxPrice) && price > maxPrice) return false;
+
+        if (inStockOnly) {
+          const stock = Number(product.stock || 0);
+          if (stock <= 0) return false;
+        }
+
+        return true;
+      });
+
+      if (sortBy === "price-low") filtered.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+      if (sortBy === "price-high") filtered.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+      if (sortBy === "name-asc") filtered.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+      if (sortBy === "name-desc") filtered.sort((a, b) => String(b.name || "").localeCompare(String(a.name || "")));
+
+      displayProducts(filtered);
     }
   }
 });
