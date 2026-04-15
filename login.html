@@ -45,6 +45,27 @@
         <small style="display:block;color:#6b7280;margin:-4px 0 10px;">Password must contain uppercase, lowercase, number, special character, and 8+ characters.</small>
         <button type="submit" class="btn primary" style="width:100%;">Login</button>
       </form>
+      <p style="margin-top:12px;"><a href="#" id="forgotPasswordLink">Forgot password?</a></p>
+      <div id="forgotPasswordPanel" style="display:none;margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+        <p style="margin:0 0 10px;color:#374151;">Enter your registered email to receive a reset link.</p>
+        <form id="forgotPasswordForm" style="display:grid;gap:10px;">
+          <input type="email" name="email" placeholder="Enter registered email" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
+          <button type="submit" class="btn outline" style="width:100%;">Send Reset Link</button>
+        </form>
+        <div id="forgotPasswordMessage" style="margin-top:8px;font-size:0.92rem;color:#374151;"></div>
+      </div>
+
+      <div id="resetPasswordPanel" style="display:none;margin-top:12px;padding:12px;border:1px solid #dbeafe;border-radius:10px;background:#eff6ff;">
+        <p style="margin:0 0 10px;color:#1f2937;font-weight:600;">Reset your password</p>
+        <form id="resetPasswordForm" style="display:grid;gap:10px;">
+          <input type="email" name="email" id="resetEmail" placeholder="Registered email" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
+          <input type="text" name="token" id="resetToken" placeholder="Reset token" required>
+          <input type="password" name="password" id="newPassword" placeholder="New password" required pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$">
+          <input type="password" name="confirmPassword" id="confirmNewPassword" placeholder="Confirm new password" required>
+          <button type="submit" class="btn primary" style="width:100%;">Update Password</button>
+        </form>
+        <div id="resetPasswordMessage" style="margin-top:8px;font-size:0.92rem;color:#374151;"></div>
+      </div>
       <p style="margin-top:12px;">New user? <a href="login.html#signup">Sign up now</a></p>
       <div id="loginError" class="error-message"></div>
     </div>

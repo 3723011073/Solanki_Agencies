@@ -30,6 +30,7 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_SECURE = /^(1|true|yes)$/i.test(process.env.SMTP_SECURE || 'false');
 const RECEIPT_FROM_EMAIL = process.env.RECEIPT_FROM_EMAIL || SMTP_USER || ADMIN_EMAIL;
+const APP_BASE_URL = process.env.APP_BASE_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'http://localhost:5500');
 
 const razorpay = (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET)
   ? new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET })
@@ -50,6 +51,7 @@ const emailTransporter = (SMTP_HOST && SMTP_USER && SMTP_PASS)
 const USER_SESSIONS = {};
 const ADMIN_SESSIONS = {};
 const LOCAL_USERS = [];
+const PASSWORD_RESET_TOKENS = {};
 
 const DB_NAME = process.env.MYSQL_DATABASE || 'solanki_agencies';
 const DB_PORT = Number(process.env.MYSQL_PORT || 3306);
@@ -68,6 +70,86 @@ let db;
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function readJsonArray(filePath) {
+  return new Promise((resolve) => {
+    fs.readFile(filePath, 'utf8', (err, data) => {
+      if (err) return resolve([]);
+      try {
+        const parsed = JSON.parse(data);
+        resolve(Array.isArray(parsed) ? parsed : []);
+      } catch (parseError) {
+        resolve([]);
+      }
+    });
+  });
+}
+
+function writeJsonArray(filePath, value) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(filePath, JSON.stringify(value, null, 2), (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+async function buildValidatedCart(rawItems) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    throw new Error('Cart is empty');
+  }
+
+  const products = await readJsonArray(PRODUCTS_FILE);
+  const productMap = new Map(products.map((product) => [Number(product.id), product]));
+
+  const consolidated = new Map();
+  rawItems.forEach((item) => {
+    const id = Number(item?.id);
+    const quantity = Number(item?.quantity);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error('Invalid cart item id');
+    }
+    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100) {
+      throw new Error('Invalid item quantity');
+    }
+
+    const previousQty = consolidated.get(id) || 0;
+    consolidated.set(id, previousQty + quantity);
+  });
+
+  const validatedItems = [];
+  let totalAmount = 0;
+
+  for (const [id, quantity] of consolidated.entries()) {
+    const product = productMap.get(id);
+    if (!product) {
+      throw new Error('Some cart items are unavailable');
+    }
+
+    const unitPrice = Number(product.price || 0);
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      throw new Error('Invalid product pricing');
+    }
+
+    const lineTotal = unitPrice * quantity;
+    totalAmount += lineTotal;
+    validatedItems.push({
+      id,
+      name: product.name,
+      price: unitPrice,
+      quantity
+    });
+  }
+
+  if (totalAmount <= 0) {
+    throw new Error('Invalid amount');
+  }
+
+  return {
+    items: validatedItems,
+    totalAmount
+  };
 }
 
 function escapeHtml(value) {
@@ -183,6 +265,34 @@ async function createUser(email, hashedPassword, name) {
   return user;
 }
 
+async function updateUserPassword(email, hashedPassword) {
+  const normalizedEmail = normalizeEmail(email);
+  if (db) {
+    const [result] = await db.query('UPDATE users SET password = ? WHERE LOWER(TRIM(email)) = ?', [hashedPassword, normalizedEmail]);
+    return Number(result.affectedRows || 0) > 0;
+  }
+
+  const user = LOCAL_USERS.find(entry => normalizeEmail(entry.email) === normalizedEmail);
+  if (!user) return false;
+  user.password = hashedPassword;
+  return true;
+}
+
+function buildPasswordResetEmailHtml(resetLink) {
+  return `
+    <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#1f2937;">
+      <h2 style="color:#0b3d91;">Solanki Agencies - Password Reset</h2>
+      <p>We received a request to reset your password.</p>
+      <p style="margin:18px 0;">
+        <a href="${escapeHtml(resetLink)}" style="background:#0b3d91;color:#ffffff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">Reset Password</a>
+      </p>
+      <p>If the button does not work, copy and paste this link into your browser:</p>
+      <p style="word-break:break-all;color:#0b3d91;">${escapeHtml(resetLink)}</p>
+      <p style="color:#6b7280;">This link expires in 30 minutes. If you did not request this, please ignore this email.</p>
+    </div>
+  `;
+}
+
 // Middleware to check admin authentication from either admin token or admin user token
 function isAdminAuthenticated(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
@@ -280,6 +390,96 @@ app.post('/api/user/login', async (req, res) => {
   } catch (error) {
     console.error('Login error', error);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/user/forgot-password', async (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  const genericResponse = { ok: true, message: 'If this email is registered, a reset link has been sent.' };
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.json(genericResponse);
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + (30 * 60 * 1000);
+    PASSWORD_RESET_TOKENS[token] = {
+      email,
+      expiresAt
+    };
+
+    const resetLink = `${APP_BASE_URL}/login.html?email=${encodeURIComponent(email)}&resetToken=${encodeURIComponent(token)}`;
+
+    if (emailTransporter) {
+      await emailTransporter.sendMail({
+        from: RECEIPT_FROM_EMAIL,
+        to: email,
+        subject: 'Reset your Solanki Agencies password',
+        html: buildPasswordResetEmailHtml(resetLink)
+      });
+    }
+
+    const payload = { ...genericResponse };
+    if (!emailTransporter) {
+      payload.devResetLink = resetLink;
+    }
+
+    res.json(payload);
+  } catch (error) {
+    console.error('Forgot password error', error);
+    res.status(500).json({ error: 'Could not process password reset request' });
+  }
+});
+
+app.post('/api/user/reset-password', async (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  const token = String(req.body?.token || '').trim();
+  const password = String(req.body?.password || '').trim();
+
+  if (!email || !token || !password) {
+    return res.status(400).json({ error: 'Email, token, and password are required' });
+  }
+
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({ error: 'Password must be strong (8+ chars, uppercase, lowercase, number, special).' });
+  }
+
+  const tokenRecord = PASSWORD_RESET_TOKENS[token];
+  if (!tokenRecord || normalizeEmail(tokenRecord.email) !== email) {
+    return res.status(400).json({ error: 'Invalid reset token' });
+  }
+
+  if (tokenRecord.expiresAt < Date.now()) {
+    delete PASSWORD_RESET_TOKENS[token];
+    return res.status(400).json({ error: 'Reset token has expired' });
+  }
+
+  try {
+    const user = await findUserByEmail(email);
+    if (!user) {
+      delete PASSWORD_RESET_TOKENS[token];
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const updated = await updateUserPassword(email, hashedPassword);
+    delete PASSWORD_RESET_TOKENS[token];
+
+    if (!updated) {
+      return res.status(500).json({ error: 'Could not update password' });
+    }
+
+    res.json({ ok: true, message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Reset password error', error);
+    res.status(500).json({ error: 'Password reset failed' });
   }
 });
 
@@ -424,12 +624,8 @@ app.post('/api/payment/create-order', authenticateUser, async (req, res) => {
     }
     
     // Validate request
-    if (!customer || !paymentMethod || !items || !totalAmount) {
+    if (!customer || !paymentMethod || !items) {
       return res.status(400).json({ error: 'Invalid payment request' });
-    }
-
-    if (items.length === 0) {
-      return res.status(400).json({ error: 'Cart is empty' });
     }
 
     // Validate customer info
@@ -437,14 +633,22 @@ app.post('/api/payment/create-order', authenticateUser, async (req, res) => {
       return res.status(400).json({ error: 'Missing required customer information' });
     }
 
-    // Validate amount is positive
-    if (totalAmount <= 0) {
-      return res.status(400).json({ error: 'Invalid amount' });
+    const allowedPaymentMethods = new Set(['card', 'upi', 'netbanking']);
+    if (!allowedPaymentMethods.has(String(paymentMethod))) {
+      return res.status(400).json({ error: 'Invalid payment method' });
+    }
+
+    // Build authoritative cart from products.json so client cannot tamper prices.
+    const validatedCart = await buildValidatedCart(items);
+    const computedTotal = Number(validatedCart.totalAmount);
+    const clientTotal = Number(totalAmount || 0);
+    if (Number.isFinite(clientTotal) && clientTotal > 0 && Math.abs(clientTotal - computedTotal) > 0.01) {
+      return res.status(400).json({ error: 'Cart total mismatch. Please refresh your cart and try again.' });
     }
 
     // Generate secure internal order ID and Razorpay order
     const internalOrderId = 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    const amountInPaise = Math.round(Number(totalAmount) * 100);
+    const amountInPaise = Math.round(computedTotal * 100);
 
     const razorpayOrder = await razorpay.orders.create({
       amount: amountInPaise,
@@ -472,50 +676,32 @@ app.post('/api/payment/create-order', authenticateUser, async (req, res) => {
         zipcode: customer.zipcode || '',
         gst: customer.gst || ''
       },
-      items: items.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity
-      })),
-      totalAmount,
+      items: validatedCart.items,
+      totalAmount: computedTotal,
       paymentMethod: paymentMethod || 'razorpay',
       razorpayOrderId: razorpayOrder.id,
       status: 'pending'
     };
 
     // Save payment record to file
-    fs.readFile(PAYMENTS_FILE, 'utf8', (err, data) => {
-      let payments = [];
-      if (!err) {
-        try {
-          payments = JSON.parse(data);
-        } catch (e) {
-          payments = [];
-        }
-      }
+    const payments = await readJsonArray(PAYMENTS_FILE);
+    payments.push(payment);
+    await writeJsonArray(PAYMENTS_FILE, payments);
 
-      payments.push(payment);
-
-      fs.writeFile(PAYMENTS_FILE, JSON.stringify(payments, null, 2), (writeErr) => {
-        if (writeErr) {
-          console.error('Error saving payment:', writeErr);
-          return res.status(500).json({ error: 'Could not create order' });
-        }
-
-        res.json({
-          ok: true,
-          keyId: RAZORPAY_KEY_ID,
-          orderId: payment.orderId,
-          razorpayOrderId: razorpayOrder.id,
-          amount: amountInPaise,
-          currency: 'INR'
-        });
-      });
+    res.json({
+      ok: true,
+      keyId: RAZORPAY_KEY_ID,
+      orderId: payment.orderId,
+      razorpayOrderId: razorpayOrder.id,
+      amount: amountInPaise,
+      currency: 'INR'
     });
 
   } catch (error) {
     console.error('Create order error:', error);
+    if (error && typeof error.message === 'string') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Could not create payment order' });
   }
 });
@@ -543,15 +729,8 @@ app.post('/api/payment/verify', authenticateUser, (req, res) => {
       return res.status(400).json({ error: 'Payment verification failed' });
     }
 
-    fs.readFile(PAYMENTS_FILE, 'utf8', (err, data) => {
-      let payments = [];
-      if (!err) {
-        try {
-          payments = JSON.parse(data);
-        } catch (e) {
-          payments = [];
-        }
-      }
+    (async () => {
+      const payments = await readJsonArray(PAYMENTS_FILE);
 
       const payment = payments.find(p =>
         p.orderId === orderId &&
@@ -563,28 +742,60 @@ app.post('/api/payment/verify', authenticateUser, (req, res) => {
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      payment.status = 'completed';
-      payment.razorpayPaymentId = razorpay_payment_id;
-      payment.razorpaySignature = razorpay_signature;
-      payment.completedAt = new Date().toISOString();
-
-      fs.writeFile(PAYMENTS_FILE, JSON.stringify(payments, null, 2), (writeErr) => {
-        if (writeErr) {
-          console.error('Error finalizing payment:', writeErr);
-          return res.status(500).json({ error: 'Could not finalize payment' });
-        }
-
-        sendReceiptEmails(payment).catch((mailErr) => {
-          console.error('Receipt email send failed:', mailErr);
-        });
-
-        res.json({
+      if (payment.status === 'completed' && payment.razorpayPaymentId === razorpay_payment_id) {
+        return res.json({
           ok: true,
           orderId: payment.orderId,
           amount: payment.totalAmount,
           status: payment.status
         });
+      }
+
+      payment.status = 'completed';
+      payment.razorpayPaymentId = razorpay_payment_id;
+      payment.razorpaySignature = razorpay_signature;
+      payment.completedAt = new Date().toISOString();
+
+      const bookings = await readJsonArray(BOOKINGS_FILE);
+      const existingBooking = bookings.find((record) => Number(record.id) === Number(payment.bookingId));
+      if (!existingBooking) {
+        const bookingRecord = {
+          id: Date.now(),
+          createdAt: payment.completedAt,
+          booking: {
+            items: payment.items,
+            businessName: payment.customer.name,
+            contactName: payment.customer.name,
+            phone: payment.customer.phone,
+            email: payment.customer.email,
+            gst: payment.customer.gst || '',
+            address: payment.customer.address,
+            payment: payment.paymentMethod,
+            date: payment.completedAt,
+            paymentOrderId: payment.orderId,
+            paymentStatus: 'completed'
+          }
+        };
+        payment.bookingId = bookingRecord.id;
+        bookings.push(bookingRecord);
+        await writeJsonArray(BOOKINGS_FILE, bookings);
+      }
+
+      await writeJsonArray(PAYMENTS_FILE, payments);
+
+      sendReceiptEmails(payment).catch((mailErr) => {
+        console.error('Receipt email send failed:', mailErr);
       });
+
+      res.json({
+        ok: true,
+        orderId: payment.orderId,
+        amount: payment.totalAmount,
+        status: payment.status
+      });
+    })().catch((writeErr) => {
+      console.error('Error finalizing payment:', writeErr);
+      res.status(500).json({ error: 'Could not finalize payment' });
     });
   } catch (error) {
     console.error('Payment verification error:', error);

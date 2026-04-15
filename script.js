@@ -102,7 +102,7 @@ function addToCart(product) {
 }
 
 function updateQuantity(productId, newQuantity) {
-  const cart = getCart();
+  let cart = getCart();
   const item = cart.find(item => item.id === productId);
   
   if (item) {
@@ -168,7 +168,8 @@ function displayBooking() {
 function clearBooking() {
   localStorage.removeItem("cart");
   displayBooking();
-  document.getElementById("booking-form").reset();
+  const bookingForm = document.getElementById("booking-form");
+  if (bookingForm) bookingForm.reset();
 }
 
 function submitBooking(event) {
@@ -301,11 +302,87 @@ async function submitSignup(event) {
   }
 }
 
+async function submitForgotPassword(event) {
+  event.preventDefault();
+  const form = event.target;
+  const messageEl = document.getElementById('forgotPasswordMessage');
+  const email = form.email.value.trim();
+
+  if (!email) {
+    if (messageEl) messageEl.textContent = 'Please enter your registered email.';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/user/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      if (messageEl) messageEl.textContent = data.error || 'Could not process request.';
+      return;
+    }
+
+    if (messageEl) {
+      messageEl.textContent = data.devResetLink
+        ? `Reset link (dev): ${data.devResetLink}`
+        : (data.message || 'If this email is registered, a reset link has been sent.');
+    }
+  } catch (error) {
+    if (messageEl) messageEl.textContent = 'Network error. Please try again.';
+  }
+}
+
+async function submitResetPassword(event) {
+  event.preventDefault();
+  const form = event.target;
+  const messageEl = document.getElementById('resetPasswordMessage');
+  const email = form.email.value.trim();
+  const token = form.token.value.trim();
+  const password = form.password.value.trim();
+  const confirmPassword = form.confirmPassword.value.trim();
+
+  if (!email || !token || !password || !confirmPassword) {
+    if (messageEl) messageEl.textContent = 'Please complete all fields.';
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    if (messageEl) messageEl.textContent = 'New password and confirm password do not match.';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/user/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, token, password })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      if (messageEl) messageEl.textContent = data.error || 'Password reset failed.';
+      return;
+    }
+
+    if (messageEl) messageEl.textContent = data.message || 'Password reset successful. You can log in now.';
+    form.reset();
+  } catch (error) {
+    if (messageEl) messageEl.textContent = 'Network error. Please try again.';
+  }
+}
+
 function attachAuthForms() {
   const loginPanel = document.getElementById('loginPanel');
   const signupPanel = document.getElementById('signupPanel');
   const showLoginBtn = document.getElementById('showLoginBtn');
   const showSignupBtn = document.getElementById('showSignupBtn');
+  const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+  const forgotPasswordPanel = document.getElementById('forgotPasswordPanel');
+  const resetPasswordPanel = document.getElementById('resetPasswordPanel');
 
   function setAuthMode(mode) {
     if (!loginPanel || !signupPanel || !showLoginBtn || !showSignupBtn) return;
@@ -336,6 +413,37 @@ function attachAuthForms() {
   const signupForm = document.getElementById('signupForm');
   if (signupForm) {
     signupForm.addEventListener('submit', submitSignup);
+  }
+
+  const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+  if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener('submit', submitForgotPassword);
+  }
+
+  const resetPasswordForm = document.getElementById('resetPasswordForm');
+  if (resetPasswordForm) {
+    resetPasswordForm.addEventListener('submit', submitResetPassword);
+  }
+
+  if (forgotPasswordLink && forgotPasswordPanel) {
+    forgotPasswordLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      const isVisible = forgotPasswordPanel.style.display === 'block';
+      forgotPasswordPanel.style.display = isVisible ? 'none' : 'block';
+    });
+  }
+
+  if (resetPasswordPanel) {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('resetToken');
+    const email = params.get('email');
+    if (token) {
+      resetPasswordPanel.style.display = 'block';
+      const emailInput = document.getElementById('resetEmail');
+      const tokenInput = document.getElementById('resetToken');
+      if (emailInput && email) emailInput.value = email;
+      if (tokenInput) tokenInput.value = token;
+    }
   }
 
   const toggleButtons = document.querySelectorAll('[data-toggle-password]');
