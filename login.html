@@ -76,7 +76,7 @@
       <form id="signupForm">
         <input type="text" name="name" placeholder="Enter name (optional)">
         <input type="email" name="email" placeholder="Enter email" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" title="Please enter a valid email address.">
-        <select name="preferredLanguage" id="preferredLanguage" required>
+        <select name="preferredLanguage" id="preferredLanguage" class="auth-select" required>
           <option value="English" selected>Preferred Language: English</option>
           <option value="Hindi">Preferred Language: Hindi</option>
           <option value="Marathi">Preferred Language: Marathi</option>
@@ -93,8 +93,8 @@
           <option value="German">Preferred Language: German</option>
           <option value="Arabic">Preferred Language: Arabic</option>
         </select>
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
-          <select name="countryCode" id="countryCode" required aria-label="Country code"></select>
+        <div class="auth-inline-grid">
+          <select name="countryCode" id="countryCode" class="auth-select" required aria-label="Country code"></select>
           <input type="tel" name="phoneNumber" id="phoneNumber" placeholder="Phone number" required pattern="\d{6,15}" title="Enter digits only, 6 to 15 digits.">
         </div>
         <div style="position:relative;">

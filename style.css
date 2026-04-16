@@ -1110,6 +1110,37 @@ body{animation: pageFade 0.6s ease both}
 .auth-card h1 { margin:0 0 8px; color:#0b3d91; }
 .auth-card p { color:#4b5563; margin-bottom:18px; }
 .auth-card input { width:100%; margin-bottom:10px; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; font-size:0.95rem; }
+.auth-card select,
+.auth-select {
+	width:100%;
+	margin-bottom:10px;
+	padding:10px 14px;
+	border:1px solid #d1d5db;
+	border-radius:8px;
+	font-size:0.95rem;
+	background:#fff;
+	color:#111827;
+	font-family:inherit;
+}
+
+.auth-inline-grid {
+	display:grid;
+	grid-template-columns:1fr 2fr;
+	gap:8px;
+	margin-bottom:10px;
+}
+
+.auth-inline-grid input,
+.auth-inline-grid select {
+	margin-bottom:0;
+}
+
+.auth-card input:focus,
+.auth-card select:focus {
+	outline:none;
+	border-color:#0b3d91;
+	box-shadow:0 0 0 3px rgba(11,61,145,0.1);
+}
 .auth-card button { margin-top:6px; border-radius:8px; }
 .error-message { color:#dc2626; margin-top:10px; font-weight:600; }
 
@@ -1138,4 +1169,10 @@ body{animation: pageFade 0.6s ease both}
 
 .auth-panel{ display:none; }
 .auth-panel.active{ display:block; }
+
+@media (max-width:640px){
+	.auth-inline-grid {
+		grid-template-columns:1fr;
+	}
+}
 
