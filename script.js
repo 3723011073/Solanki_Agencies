@@ -172,27 +172,18 @@ function formatAmountFromInr(amountInInr) {
 }
 
 function populateCountryCodeSelect() {
-  const select = document.getElementById('countryCodePreset');
-  const manualInput = document.getElementById('countryCode');
-  if (!select || !manualInput) return;
+  const select = document.getElementById('countryCode');
+  if (!select) return;
 
   select.innerHTML = '';
   COUNTRY_PHONE_OPTIONS.forEach((option) => {
     const el = document.createElement('option');
     el.value = option.dialCode;
-    el.textContent = `${option.name} (${option.dialCode})`;
+    el.textContent = `${option.name}(${option.dialCode})`;
     if (option.dialCode === '+91') {
       el.selected = true;
     }
     select.appendChild(el);
-  });
-
-  if (!manualInput.value) {
-    manualInput.value = select.value || '+91';
-  }
-
-  select.addEventListener('change', function () {
-    if (select.value) manualInput.value = select.value;
   });
 }
 
