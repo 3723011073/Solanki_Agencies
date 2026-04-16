@@ -457,6 +457,13 @@ body::before{
 	background:linear-gradient(180deg, #eef3f8 0%, #f5f8fb 100%);
 }
 
+.product-image-box.catalog-image-box img{
+	object-fit:contain;
+	object-position:center;
+	padding:8px;
+	background:#f3f7fb;
+}
+
 .product-card img{
 	display:block;
 	width:100%;
@@ -529,6 +536,10 @@ body::before{
 	.product-image-box{
 		height:200px;
 		padding:14px;
+	}
+
+	.product-image-box.catalog-image-box img{
+		padding:6px;
 	}
 
 	.product-card h3,
