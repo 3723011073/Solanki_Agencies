@@ -72,6 +72,34 @@ function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function normalizePhoneCode(value) {
+  const raw = String(value || '').trim();
+  const digits = raw.replace(/[^\d]/g, '');
+  return digits ? `+${digits}` : '';
+}
+
+function normalizePhoneNumber(value) {
+  return String(value || '').replace(/[^\d]/g, '').slice(0, 20);
+}
+
+function normalizeLanguage(value) {
+  const raw = String(value || '').trim();
+  return raw ? raw.slice(0, 40) : 'English';
+}
+
+function toPublicUser(user) {
+  const email = user?.email || '';
+  return {
+    id: Number(user?.id || 0),
+    email,
+    name: user?.name || '',
+    phoneCode: user?.phoneCode || user?.phone_code || '',
+    phoneNumber: user?.phoneNumber || user?.phone_number || '',
+    preferredLanguage: user?.preferredLanguage || user?.preferred_language || 'English',
+    isAdmin: normalizeEmail(email) === NORMALIZED_ADMIN_EMAIL
+  };
+}
+
 function readJsonArray(filePath) {
   return new Promise((resolve) => {
     fs.readFile(filePath, 'utf8', (err, data) => {
@@ -235,8 +263,25 @@ async function initDb() {
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     name VARCHAR(255),
+    phone_code VARCHAR(16),
+    phone_number VARCHAR(32),
+    preferred_language VARCHAR(40),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
+
+  const ensureColumn = async (columnName, definition) => {
+    const [rows] = await db.query(
+      'SELECT COUNT(*) AS count FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
+      [DB_NAME, 'users', columnName]
+    );
+    if (Number(rows?.[0]?.count || 0) === 0) {
+      await db.query(`ALTER TABLE users ADD COLUMN ${definition}`);
+    }
+  };
+
+  await ensureColumn('phone_code', 'phone_code VARCHAR(16)');
+  await ensureColumn('phone_number', 'phone_number VARCHAR(32)');
+  await ensureColumn('preferred_language', 'preferred_language VARCHAR(40)');
 }
 
 initDb().catch(err => {
@@ -254,13 +299,37 @@ async function findUserByEmail(email) {
   return LOCAL_USERS.find(user => normalizeEmail(user.email) === normalizedEmail) || null;
 }
 
-async function createUser(email, hashedPassword, name) {
+async function createUser(email, hashedPassword, name, phoneCode, phoneNumber, preferredLanguage) {
+  const safePhoneCode = normalizePhoneCode(phoneCode);
+  const safePhoneNumber = normalizePhoneNumber(phoneNumber);
+  const safeLanguage = normalizeLanguage(preferredLanguage);
+
   if (db) {
-    const [result] = await db.query('INSERT INTO users (email, password, name) VALUES (?, ?, ?)', [email, hashedPassword, name || null]);
-    return { id: result.insertId, email, password: hashedPassword, name: name || '' };
+    const [result] = await db.query(
+      'INSERT INTO users (email, password, name, phone_code, phone_number, preferred_language) VALUES (?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, name || null, safePhoneCode || null, safePhoneNumber || null, safeLanguage]
+    );
+    return {
+      id: result.insertId,
+      email,
+      password: hashedPassword,
+      name: name || '',
+      phoneCode: safePhoneCode,
+      phoneNumber: safePhoneNumber,
+      preferredLanguage: safeLanguage
+    };
   }
+
   const id = LOCAL_USERS.length > 0 ? Math.max(...LOCAL_USERS.map(u => u.id)) + 1 : 1;
-  const user = { id, email, password: hashedPassword, name: name || '' };
+  const user = {
+    id,
+    email,
+    password: hashedPassword,
+    name: name || '',
+    phoneCode: safePhoneCode,
+    phoneNumber: safePhoneNumber,
+    preferredLanguage: safeLanguage
+  };
   LOCAL_USERS.push(user);
   return user;
 }
@@ -338,8 +407,12 @@ app.post('/api/user/signup', async (req, res) => {
   const email = normalizeEmail(req.body?.email);
   const password = String(req.body?.password || '').trim();
   const name = String(req.body?.name || '').trim();
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+  const phoneCode = normalizePhoneCode(req.body?.phoneCode);
+  const phoneNumber = normalizePhoneNumber(req.body?.phoneNumber);
+  const preferredLanguage = normalizeLanguage(req.body?.preferredLanguage);
+
+  if (!email || !password || !phoneCode || !phoneNumber) {
+    return res.status(400).json({ error: 'Email, password, country code, and phone number are required' });
   }
 
   try {
@@ -348,11 +421,11 @@ app.post('/api/user/signup', async (req, res) => {
       return res.status(409).json({ error: 'User already exists' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await createUser(email, hashedPassword, name || '');
-    const isAdmin = normalizeEmail(user.email) === NORMALIZED_ADMIN_EMAIL;
+    const user = await createUser(email, hashedPassword, name || '', phoneCode, phoneNumber, preferredLanguage);
+    const publicUser = toPublicUser(user);
     const token = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    USER_SESSIONS[token] = { id: user.id, email: user.email, name: user.name || '', isAdmin };
-    res.json({ ok: true, token, user: { id: user.id, email: user.email, name: user.name || '', isAdmin } });
+    USER_SESSIONS[token] = publicUser;
+    res.json({ ok: true, token, user: publicUser });
   } catch (error) {
     console.error('Signup error', error);
     res.status(500).json({ error: 'Signup failed' });
@@ -369,8 +442,16 @@ app.post('/api/user/login', async (req, res) => {
 
   if (email === NORMALIZED_ADMIN_EMAIL && password === NORMALIZED_ADMIN_PASSWORD) {
     const token = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    USER_SESSIONS[token] = { id: 0, email: ADMIN_EMAIL, name: 'Admin', isAdmin: true };
-    return res.json({ ok: true, token, user: { id: 0, email: ADMIN_EMAIL, name: 'Admin', isAdmin: true } });
+    const adminUser = toPublicUser({
+      id: 0,
+      email: ADMIN_EMAIL,
+      name: 'Admin',
+      phoneCode: '+91',
+      phoneNumber: '',
+      preferredLanguage: 'English'
+    });
+    USER_SESSIONS[token] = adminUser;
+    return res.json({ ok: true, token, user: adminUser });
   }
 
   try {
@@ -383,10 +464,10 @@ app.post('/api/user/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const isAdmin = normalizeEmail(user.email) === NORMALIZED_ADMIN_EMAIL;
+    const publicUser = toPublicUser(user);
     const token = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    USER_SESSIONS[token] = { id: user.id, email: user.email, name: user.name, isAdmin };
-    res.json({ ok: true, token, user: { id: user.id, email: user.email, name: user.name, isAdmin } });
+    USER_SESSIONS[token] = publicUser;
+    res.json({ ok: true, token, user: publicUser });
   } catch (error) {
     console.error('Login error', error);
     res.status(500).json({ error: 'Login failed' });

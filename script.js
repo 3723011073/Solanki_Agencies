@@ -1,14 +1,210 @@
 // Auth helpers
 
+const COUNTRY_PHONE_OPTIONS = [
+  { name: 'Afghanistan', dialCode: '+93', currency: 'AFN' },
+  { name: 'Albania', dialCode: '+355', currency: 'ALL' },
+  { name: 'Algeria', dialCode: '+213', currency: 'DZD' },
+  { name: 'Argentina', dialCode: '+54', currency: 'ARS' },
+  { name: 'Australia', dialCode: '+61', currency: 'AUD' },
+  { name: 'Austria', dialCode: '+43', currency: 'EUR' },
+  { name: 'Bahrain', dialCode: '+973', currency: 'BHD' },
+  { name: 'Bangladesh', dialCode: '+880', currency: 'BDT' },
+  { name: 'Belgium', dialCode: '+32', currency: 'EUR' },
+  { name: 'Brazil', dialCode: '+55', currency: 'BRL' },
+  { name: 'Bulgaria', dialCode: '+359', currency: 'BGN' },
+  { name: 'Cambodia', dialCode: '+855', currency: 'KHR' },
+  { name: 'Canada', dialCode: '+1', currency: 'CAD' },
+  { name: 'China', dialCode: '+86', currency: 'CNY' },
+  { name: 'Colombia', dialCode: '+57', currency: 'COP' },
+  { name: 'Croatia', dialCode: '+385', currency: 'EUR' },
+  { name: 'Czech Republic', dialCode: '+420', currency: 'CZK' },
+  { name: 'Denmark', dialCode: '+45', currency: 'DKK' },
+  { name: 'Egypt', dialCode: '+20', currency: 'EGP' },
+  { name: 'Finland', dialCode: '+358', currency: 'EUR' },
+  { name: 'France', dialCode: '+33', currency: 'EUR' },
+  { name: 'Germany', dialCode: '+49', currency: 'EUR' },
+  { name: 'Greece', dialCode: '+30', currency: 'EUR' },
+  { name: 'Hong Kong', dialCode: '+852', currency: 'HKD' },
+  { name: 'Hungary', dialCode: '+36', currency: 'HUF' },
+  { name: 'India', dialCode: '+91', currency: 'INR' },
+  { name: 'Indonesia', dialCode: '+62', currency: 'IDR' },
+  { name: 'Ireland', dialCode: '+353', currency: 'EUR' },
+  { name: 'Israel', dialCode: '+972', currency: 'ILS' },
+  { name: 'Italy', dialCode: '+39', currency: 'EUR' },
+  { name: 'Japan', dialCode: '+81', currency: 'JPY' },
+  { name: 'Jordan', dialCode: '+962', currency: 'JOD' },
+  { name: 'Kenya', dialCode: '+254', currency: 'KES' },
+  { name: 'Kuwait', dialCode: '+965', currency: 'KWD' },
+  { name: 'Lebanon', dialCode: '+961', currency: 'LBP' },
+  { name: 'Malaysia', dialCode: '+60', currency: 'MYR' },
+  { name: 'Mexico', dialCode: '+52', currency: 'MXN' },
+  { name: 'Morocco', dialCode: '+212', currency: 'MAD' },
+  { name: 'Nepal', dialCode: '+977', currency: 'NPR' },
+  { name: 'Netherlands', dialCode: '+31', currency: 'EUR' },
+  { name: 'New Zealand', dialCode: '+64', currency: 'NZD' },
+  { name: 'Nigeria', dialCode: '+234', currency: 'NGN' },
+  { name: 'Norway', dialCode: '+47', currency: 'NOK' },
+  { name: 'Oman', dialCode: '+968', currency: 'OMR' },
+  { name: 'Pakistan', dialCode: '+92', currency: 'PKR' },
+  { name: 'Philippines', dialCode: '+63', currency: 'PHP' },
+  { name: 'Poland', dialCode: '+48', currency: 'PLN' },
+  { name: 'Portugal', dialCode: '+351', currency: 'EUR' },
+  { name: 'Qatar', dialCode: '+974', currency: 'QAR' },
+  { name: 'Romania', dialCode: '+40', currency: 'RON' },
+  { name: 'Russia', dialCode: '+7', currency: 'RUB' },
+  { name: 'Saudi Arabia', dialCode: '+966', currency: 'SAR' },
+  { name: 'Singapore', dialCode: '+65', currency: 'SGD' },
+  { name: 'South Africa', dialCode: '+27', currency: 'ZAR' },
+  { name: 'South Korea', dialCode: '+82', currency: 'KRW' },
+  { name: 'Spain', dialCode: '+34', currency: 'EUR' },
+  { name: 'Sri Lanka', dialCode: '+94', currency: 'LKR' },
+  { name: 'Sweden', dialCode: '+46', currency: 'SEK' },
+  { name: 'Switzerland', dialCode: '+41', currency: 'CHF' },
+  { name: 'Thailand', dialCode: '+66', currency: 'THB' },
+  { name: 'Turkey', dialCode: '+90', currency: 'TRY' },
+  { name: 'UAE', dialCode: '+971', currency: 'AED' },
+  { name: 'UK', dialCode: '+44', currency: 'GBP' },
+  { name: 'USA', dialCode: '+1', currency: 'USD' },
+  { name: 'Vietnam', dialCode: '+84', currency: 'VND' }
+];
+
+const INR_TO_CURRENCY = {
+  INR: 1,
+  USD: 0.012,
+  EUR: 0.011,
+  GBP: 0.0095,
+  AED: 0.044,
+  AUD: 0.018,
+  CAD: 0.016,
+  SGD: 0.016,
+  NZD: 0.019,
+  CHF: 0.011,
+  JPY: 1.8,
+  CNY: 0.087,
+  HKD: 0.094,
+  KRW: 16.2,
+  THB: 0.43,
+  MYR: 0.056,
+  IDR: 194,
+  PHP: 0.68,
+  VND: 305,
+  SAR: 0.045,
+  QAR: 0.044,
+  OMR: 0.0046,
+  KWD: 0.0037,
+  BHD: 0.0045,
+  JOD: 0.0085,
+  ILS: 0.044,
+  TRY: 0.39,
+  RUB: 1.07,
+  PLN: 0.044,
+  CZK: 0.28,
+  HUF: 4.4,
+  RON: 0.053,
+  BGN: 0.022,
+  DKK: 0.082,
+  NOK: 0.13,
+  SEK: 0.13,
+  HRK: 0.083,
+  ZAR: 0.22,
+  NGN: 18.5,
+  KES: 1.55,
+  EGP: 0.58,
+  MAD: 0.12,
+  DZD: 1.6,
+  PKR: 3.3,
+  NPR: 1.6,
+  LKR: 3.6,
+  BDT: 1.4,
+  AFN: 0.83,
+  ALL: 1.1,
+  ARS: 10.5,
+  BRL: 0.064,
+  COP: 48,
+  KHR: 49,
+  MXN: 0.2,
+  LBP: 1070
+};
+
+const DEFAULT_CURRENCY = 'INR';
+
+function normalizeAuthUser(user) {
+  if (!user) return null;
+  return {
+    ...user,
+    phoneCode: String(user.phoneCode || '').trim(),
+    phoneNumber: String(user.phoneNumber || '').trim(),
+    preferredLanguage: String(user.preferredLanguage || 'English').trim()
+  };
+}
+
+function getUserCurrencyCode() {
+  const { user } = getAuth();
+  const phoneCode = String(user?.phoneCode || '').trim();
+  if (!phoneCode) return DEFAULT_CURRENCY;
+
+  const reversed = [...COUNTRY_PHONE_OPTIONS].reverse();
+  const match = reversed.find(option => option.dialCode === phoneCode);
+  return match ? match.currency : DEFAULT_CURRENCY;
+}
+
+function convertInrAmount(amountInInr) {
+  const amount = Number(amountInInr || 0);
+  const currency = getUserCurrencyCode();
+  const rate = Number(INR_TO_CURRENCY[currency] || 1);
+  return {
+    amount: amount * rate,
+    currency
+  };
+}
+
+function formatAmountFromInr(amountInInr) {
+  const converted = convertInrAmount(amountInInr);
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: converted.currency,
+      maximumFractionDigits: converted.currency === 'JPY' || converted.currency === 'KRW' || converted.currency === 'VND' || converted.currency === 'IDR' ? 0 : 2
+    }).format(converted.amount);
+  } catch (error) {
+    return `${converted.currency} ${converted.amount.toFixed(2)}`;
+  }
+}
+
+function populateCountryCodeSelect() {
+  const select = document.getElementById('countryCodePreset');
+  const manualInput = document.getElementById('countryCode');
+  if (!select || !manualInput) return;
+
+  select.innerHTML = '';
+  COUNTRY_PHONE_OPTIONS.forEach((option) => {
+    const el = document.createElement('option');
+    el.value = option.dialCode;
+    el.textContent = `${option.name} (${option.dialCode})`;
+    if (option.dialCode === '+91') {
+      el.selected = true;
+    }
+    select.appendChild(el);
+  });
+
+  if (!manualInput.value) {
+    manualInput.value = select.value || '+91';
+  }
+
+  select.addEventListener('change', function () {
+    if (select.value) manualInput.value = select.value;
+  });
+}
+
 function getAuth() {
   const token = localStorage.getItem('authToken');
   const user = localStorage.getItem('authUser');
-  return { token, user: user ? JSON.parse(user) : null };
+  return { token, user: user ? normalizeAuthUser(JSON.parse(user)) : null };
 }
 
 function setAuth(token, user) {
   localStorage.setItem('authToken', token);
-  localStorage.setItem('authUser', JSON.stringify(user));
+  localStorage.setItem('authUser', JSON.stringify(normalizeAuthUser(user)));
   updateNavForAuth();
 }
 
@@ -136,7 +332,7 @@ function displayBooking() {
   
   if (cart.length === 0) {
     bookingList.innerHTML = "<li style='padding:10px 0; color:#6b7280;'>No items in cart</li>";
-    bookingSummary.innerHTML = "Total: ₹0";
+    bookingSummary.innerHTML = `Total: ${formatAmountFromInr(0)}`;
     return;
   }
   
@@ -149,20 +345,20 @@ function displayBooking() {
     li.innerHTML = `
       <div class="booking-item-info">
         <div class="booking-item-name">${item.name}</div>
-        <div class="booking-item-price">₹${item.price.toLocaleString()}</div>
+        <div class="booking-item-price">${formatAmountFromInr(item.price)}</div>
       </div>
       <div class="booking-item-controls">
         <button class="qty-btn" onclick="updateQuantity(${item.id}, ${item.quantity - 1})">−</button>
         <input type="number" class="qty-input" value="${item.quantity}" onchange="updateQuantity(${item.id}, parseInt(this.value))">
         <button class="qty-btn" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
       </div>
-      <div class="booking-item-total">₹${itemTotal.toLocaleString()}</div>
+      <div class="booking-item-total">${formatAmountFromInr(itemTotal)}</div>
       <button class="remove-btn" onclick="removeFromCart(${item.id})">✕</button>
     `;
     bookingList.appendChild(li);
   });
   
-  bookingSummary.innerHTML = `<div style="font-size:1.3rem; color:var(--accent);">Total: ₹${total.toLocaleString()}</div>`;
+  bookingSummary.innerHTML = `<div style="font-size:1.3rem; color:var(--accent);">Total: ${formatAmountFromInr(total)}</div>`;
 }
 
 function clearBooking() {
@@ -259,11 +455,20 @@ async function submitSignup(event) {
   const email = form.email.value.trim();
   const password = form.password.value.trim();
   const confirm = form.confirmPassword.value.trim();
+  const phoneCode = String(form.countryCode?.value || '').trim();
+  const phoneNumber = String(form.phoneNumber?.value || '').trim();
+  const preferredLanguage = String(form.preferredLanguage?.value || 'English').trim();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+  const phoneRegex = /^\d{6,15}$/;
 
-  if (!email || !password || !confirm) {
+  if (!email || !password || !confirm || !phoneCode || !phoneNumber) {
     alert('Please complete all required fields.');
+    return;
+  }
+
+  if (!phoneRegex.test(phoneNumber)) {
+    alert('Please enter a valid phone number (6 to 15 digits).');
     return;
   }
 
@@ -285,7 +490,7 @@ async function submitSignup(event) {
   const response = await fetch('/api/user/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password })
+    body: JSON.stringify({ name, email, password, phoneCode, phoneNumber, preferredLanguage })
   });
 
   const data = await response.json();
@@ -383,6 +588,8 @@ function attachAuthForms() {
   const forgotPasswordLink = document.getElementById('forgotPasswordLink');
   const forgotPasswordPanel = document.getElementById('forgotPasswordPanel');
   const resetPasswordPanel = document.getElementById('resetPasswordPanel');
+
+  populateCountryCodeSelect();
 
   function setAuthMode(mode) {
     if (!loginPanel || !signupPanel || !showLoginBtn || !showSignupBtn) return;
@@ -633,7 +840,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const price = document.createElement("p");
         price.classList.add("price");
-        price.textContent = "₹" + product.price;
+        price.textContent = formatAmountFromInr(product.price);
         card.appendChild(price);
 
         const desc = document.createElement("p");

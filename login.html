@@ -76,6 +76,28 @@
       <form id="signupForm">
         <input type="text" name="name" placeholder="Enter name (optional)">
         <input type="email" name="email" placeholder="Enter email" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" title="Please enter a valid email address.">
+        <select name="preferredLanguage" id="preferredLanguage" required>
+          <option value="English" selected>Preferred Language: English</option>
+          <option value="Hindi">Preferred Language: Hindi</option>
+          <option value="Marathi">Preferred Language: Marathi</option>
+          <option value="Gujarati">Preferred Language: Gujarati</option>
+          <option value="Tamil">Preferred Language: Tamil</option>
+          <option value="Telugu">Preferred Language: Telugu</option>
+          <option value="Kannada">Preferred Language: Kannada</option>
+          <option value="Malayalam">Preferred Language: Malayalam</option>
+          <option value="Bengali">Preferred Language: Bengali</option>
+          <option value="Punjabi">Preferred Language: Punjabi</option>
+          <option value="Urdu">Preferred Language: Urdu</option>
+          <option value="French">Preferred Language: French</option>
+          <option value="Spanish">Preferred Language: Spanish</option>
+          <option value="German">Preferred Language: German</option>
+          <option value="Arabic">Preferred Language: Arabic</option>
+        </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px;">
+          <select id="countryCodePreset" aria-label="Country picker"></select>
+          <input type="text" name="countryCode" id="countryCode" placeholder="+Code" required pattern="\+\d{1,4}" title="Enter valid country code like +91">
+          <input type="tel" name="phoneNumber" id="phoneNumber" placeholder="Phone number" required pattern="\d{6,15}" title="Enter digits only, 6 to 15 digits.">
+        </div>
         <div style="position:relative;">
           <input id="signupPassword" type="password" name="password" placeholder="Enter password" required pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" title="Password must be at least 8 characters and include uppercase, lowercase, number, and special character." style="padding-right:80px;">
           <button type="button" data-toggle-password="signupPassword" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:#0b3d91;cursor:pointer;font-weight:600;">Show</button>
