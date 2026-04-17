@@ -5,9 +5,9 @@ ROOT = Path(__file__).resolve().parent
 MASTER_DIR = ROOT / "images" / "catalog_clean" / "master"
 
 CANVAS = 900
-FILL = 0.88
-DIFF_THRESHOLD = 16
-PADDING = 14
+FILL = 0.93
+DIFF_THRESHOLD = 14
+PADDING = 10
 MIN_AREA_RATIO = 0.03
 CANVAS_BG = (244, 247, 250)
 
@@ -60,7 +60,18 @@ def detect_foreground_bbox(img: Image.Image):
     edges = ImageOps.grayscale(img.filter(ImageFilter.FIND_EDGES))
     boosted_edges = edges.point(lambda p: min(255, int(p * 2.2)))
 
+    # Ignore noisy catalog strips near page edges and prioritize center content.
+    focus_left = int(w * 0.03)
+    focus_right = int(w * 0.97)
+    focus_top = int(h * 0.08)
+    focus_bottom = int(h * 0.90)
+
     combined = ImageChops.lighter(gray_diff, boosted_edges)
+    focus_mask = Image.new("L", (w, h), 0)
+    focus_patch = Image.new("L", (focus_right - focus_left, focus_bottom - focus_top), 255)
+    focus_mask.paste(focus_patch, (focus_left, focus_top))
+    combined = ImageChops.multiply(combined, focus_mask)
+
     mask = combined.point(lambda p: 255 if p > DIFF_THRESHOLD else 0)
     bbox = mask.getbbox()
     if bbox is None:
