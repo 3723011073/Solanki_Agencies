@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: solanki-agencies
+    env: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /

@@ -68,89 +68,90 @@ SMTP_SECURE=false
 RECEIPT_FROM_EMAIL=your_email@example.com
 ```
 
-## Fly.io Deployment
+## Recommended Deployment: Render + GitHub + GoDaddy
 
-This app runs on Fly.io as a Docker container.
+This project is already a single Express app that serves both the frontend and the API from `server.js`, so Render can host it as one web service with automatic deploys from GitHub.
 
-1. Install the Fly CLI and sign in:
+Why this is the best free-first option:
+- One service runs the UI, API, and payment flow together.
+- Pushes to GitHub can deploy automatically to Render.
+- Your GoDaddy domain can point to the Render service with standard DNS records.
 
-```powershell
-fly auth login
+What works on Render:
+- All HTML/CSS/JS pages
+- API routes in `server.js`
+- Razorpay order creation and verification
+- Email sending if SMTP is configured
+
+Important free-tier note:
+- Render free web services can sleep when idle.
+- File-based data in `bookings.json`, `payments.json`, and in-memory auth data is not ideal for long-term production storage on a free instance.
+- If the client needs durable orders, users, and payments, connect a persistent database before going fully live.
+
+### 1. Connect GitHub to Render
+
+1. Push this repository to GitHub.
+2. Sign in to Render with GitHub.
+3. Create a new **Blueprint** service from the repository.
+4. Render will read [`render.yaml`](render.yaml) and create the service automatically.
+5. Keep **Auto-Deploy** enabled so every push to `main` redeploys the app.
+
+### 2. Set Render environment variables
+
+Add the real production values in the Render dashboard:
+
+```env
+ADMIN_EMAIL=solankiagencies07@gmail.com
+ADMIN_PASSWORD=your_admin_password
+RAZORPAY_KEY_ID=your_key_id
+RAZORPAY_KEY_SECRET=your_key_secret
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@example.com
+SMTP_PASS=your_app_password
+SMTP_SECURE=false
+RECEIPT_FROM_EMAIL=your_email@example.com
+MYSQL_HOST=your_mysql_host
+MYSQL_USER=your_mysql_user
+MYSQL_PASSWORD=your_mysql_password
+MYSQL_DATABASE=solanki_agencies
+MYSQL_PORT=3306
+MYSQL_SSL=true
+APP_BASE_URL=https://your-final-domain.example
 ```
 
-2. Create the app once:
+If you do not use MySQL, the app falls back to local in-memory auth for development, but that is not durable for production.
 
-```powershell
-fly launch --no-deploy
-```
+### 3. Render app settings
 
-3. Set secrets in Fly:
+Use these values in the Render web service:
+- Build command: `npm ci`
+- Start command: `npm start`
+- Runtime: Node
+- Health check path: `/`
 
-```powershell
-fly secrets set `
-	RAZORPAY_KEY_ID=... `
-	RAZORPAY_KEY_SECRET=... `
-	ADMIN_EMAIL=solankiagencies07@gmail.com `
-	ADMIN_PASSWORD=... `
-	MYSQL_HOST=... `
-	MYSQL_USER=... `
-	MYSQL_PASSWORD=... `
-	MYSQL_DATABASE=... `
-	APP_BASE_URL=https://your-fly-domain.example
-```
+The app listens on `process.env.PORT`, so Render can assign the port automatically.
 
-4. Deploy:
+### 4. GoDaddy DNS setup
 
-```powershell
-fly deploy
-```
+Use GoDaddy after Render gives you the service URL:
 
-5. Update GoDaddy DNS after Fly gives you the app hostname:
-- Point `www` to the Fly hostname with a `CNAME` record.
-- For the root domain, either use GoDaddy forwarding to `www` or set up an `A`/`ALIAS`-style solution supported by your DNS plan.
-- Once the domain resolves, set `APP_BASE_URL` to the final public URL so reset-password and receipt links use the correct domain.
+1. In Render, add your custom domain, preferably `www.yourdomain.com`.
+2. In GoDaddy DNS, create a `CNAME` record:
+   - Host: `www`
+   - Points to: your Render service hostname, for example `solanki-agencies.onrender.com`
+3. For the root domain `yourdomain.com`, either:
+   - use GoDaddy forwarding to redirect `yourdomain.com` to `www.yourdomain.com`, or
+   - use a DNS provider that supports apex flattening if you want the root to point directly.
+4. After DNS updates, set `APP_BASE_URL` in Render to the final public URL.
+5. Enable HTTPS in Render after the domain verifies.
 
-## GitHub Actions Deployment
+Recommended live setup:
+- Use Render for the app hosting.
+- Use GitHub for automatic deploys.
+- Use GoDaddy only for domain registration and DNS.
 
-Pushes to `main` can deploy automatically to Fly.io if you add these GitHub secrets:
-- `FLY_API_TOKEN`
-- `FLY_APP_NAME`
-
-The workflow file in `.github/workflows/fly-deploy.yml` uses those secrets.
-
-## Free Deployment Option: GitHub Pages
-
-If you want the site live without paying for hosting, GitHub Pages is the best fit for this repository. It is a static deployment, so it publishes the HTML, CSS, JavaScript, images, and product pages directly from `main`.
-
-What works on GitHub Pages:
-- Home page and all static pages
-- Product catalog and UI rendering
-- Client-side cart flow and fallback data
-- Documentation/report files in the repository
-
-What does not run on GitHub Pages:
-- `server.js`
-- API routes such as authentication, bookings, Razorpay order creation, and receipt generation
-- MySQL / email / server-side payment verification
-
-Automatic deploy setup:
-1. Push the repository to GitHub.
-2. Open **Settings > Pages** in the repository.
-3. Set **Build and deployment** to **GitHub Actions**.
-4. Let the workflow in `.github/workflows/deploy-pages.yml` deploy on every push to `main`.
-
-GoDaddy DNS steps for a custom domain:
-1. Decide whether you want the root domain or `www` to open the site.
-2. In GoDaddy DNS, point the domain to GitHub Pages.
-3. For the root domain, add GitHub Pages A records.
-4. For `www`, add a CNAME record to the GitHub Pages hostname.
-5. In GitHub Pages settings, add the custom domain and enable HTTPS after DNS propagates.
-
-Recommended live setup for this project:
-- Use GitHub Pages now for the free public site.
-- Keep the backend for local development or move it later to a paid/API host if bookings and payment processing must be live.
-
-## Payment API Flow
+## Payment Flow
 
 1. `GET /api/payment/config` checks if Razorpay is configured.
 2. `POST /api/payment/create-order` creates a Razorpay order.
@@ -165,6 +166,6 @@ Security notes:
 - Successful payment auto-creates booking history.
 
 Next steps / suggestions:
-- Configure production Razorpay keys in Railway and run one test transaction.
+- Configure production Razorpay keys in Render and run one test transaction.
 - Add payment webhook support for asynchronous reconciliation.
 - Add stock reduction logic after successful payment.
