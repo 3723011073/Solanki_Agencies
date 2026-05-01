@@ -536,6 +536,8 @@ Process Payment
 <script src="script.js" defer></script>
 <script>
 
+let paymentGatewayReady = false;
+
 // Payment page specific functions
 function enforceAuthForPayment() {
   const { token } = getAuth();
@@ -634,6 +636,57 @@ function showSuccess(message) {
   successDiv.style.display = 'block';
 }
 
+function setPayButtonState(disabled) {
+  const payButton = document.getElementById('payButton');
+  if (payButton) {
+    payButton.disabled = Boolean(disabled);
+  }
+}
+
+function buildMethodOptions(paymentMethod) {
+  const normalized = String(paymentMethod || '').toLowerCase();
+  if (normalized === 'upi') {
+    return { upi: true, card: false, netbanking: false, wallet: false };
+  }
+  if (normalized === 'netbanking') {
+    return { upi: false, card: false, netbanking: true, wallet: false };
+  }
+  return { upi: false, card: true, netbanking: false, wallet: false };
+}
+
+async function ensurePaymentGatewayReady() {
+  const { token } = getAuth();
+  if (!token) {
+    paymentGatewayReady = false;
+    setPayButtonState(true);
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/payment/config', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.ok || !data.keyId) {
+      paymentGatewayReady = false;
+      setPayButtonState(true);
+      showError(data.error || 'Payment gateway is not configured yet. Please contact support.');
+      return;
+    }
+
+    paymentGatewayReady = true;
+    setPayButtonState(false);
+  } catch (error) {
+    paymentGatewayReady = false;
+    setPayButtonState(true);
+    showError('Unable to reach payment gateway setup. Please try again.');
+  }
+}
+
 async function processPayment() {
   const cart = getCart();
   
@@ -647,9 +700,19 @@ async function processPayment() {
   }
 
   const { token, user } = getAuth();
+  if (!token) {
+    showError('Your session has expired. Please login again.');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  if (!paymentGatewayReady) {
+    showError('Payment gateway is not ready. Please refresh and try again.');
+    return;
+  }
+
   const payButton = document.getElementById('payButton');
   const spinner = document.getElementById('spinner');
-  const form = document.getElementById('paymentForm');
 
   // Disable button and show spinner
   payButton.disabled = true;
@@ -705,6 +768,7 @@ async function processPayment() {
         internalOrderId: result.orderId,
         userEmail: user ? user.email : paymentData.customer.email
       },
+      method: buildMethodOptions(paymentData.paymentMethod),
       theme: { color: '#0b3d91' },
       handler: async function (rzpResponse) {
         try {
@@ -785,6 +849,15 @@ document.addEventListener('DOMContentLoaded', function() {
   displayOrderSummary();
   setupPaymentMethodListeners();
   updateNavForAuth();
+  ensurePaymentGatewayReady();
+
+  const { user } = getAuth();
+  if (user) {
+    const fullNameInput = document.getElementById('fullName');
+    const emailInput = document.getElementById('email');
+    if (fullNameInput && user.name && !fullNameInput.value) fullNameInput.value = user.name;
+    if (emailInput && user.email && !emailInput.value) emailInput.value = user.email;
+  }
 
   // Card number formatting
   const cardNumberInput = document.getElementById('cardNumber');
