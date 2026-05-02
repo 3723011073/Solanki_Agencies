@@ -17,6 +17,7 @@ const DATA_DIR = __dirname;
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const BOOKINGS_FILE = path.join(DATA_DIR, 'bookings.json');
 const PAYMENTS_FILE = path.join(DATA_DIR, 'payments.json');
+const PASSWORD_RESET_FILE = path.join(DATA_DIR, 'password_reset_tokens.json');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@solankiagencies.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
@@ -51,7 +52,7 @@ const emailTransporter = (SMTP_HOST && SMTP_USER && SMTP_PASS)
 const USER_SESSIONS = {};
 const ADMIN_SESSIONS = {};
 const LOCAL_USERS = [];
-const PASSWORD_RESET_TOKENS = {};
+let PASSWORD_RESET_TOKENS = loadPasswordResetTokens();
 
 const DB_NAME = process.env.MYSQL_DATABASE || 'solanki_agencies';
 const DB_PORT = Number(process.env.MYSQL_PORT || 3306);
@@ -121,6 +122,66 @@ function writeJsonArray(filePath, value) {
       resolve();
     });
   });
+}
+
+function readJsonObject(filePath) {
+  return new Promise((resolve) => {
+    fs.readFile(filePath, 'utf8', (err, data) => {
+      if (err) return resolve({});
+      try {
+        const parsed = JSON.parse(data);
+        resolve(parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {});
+      } catch (parseError) {
+        resolve({});
+      }
+    });
+  });
+}
+
+function writeJsonObject(filePath, value) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(filePath, JSON.stringify(value, null, 2), (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+function loadPasswordResetTokens() {
+  try {
+    if (!fs.existsSync(PASSWORD_RESET_FILE)) {
+      return {};
+    }
+
+    const raw = fs.readFileSync(PASSWORD_RESET_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return parsed;
+  } catch (error) {
+    console.warn('Could not load password reset tokens. Starting fresh.');
+    return {};
+  }
+}
+
+function pruneExpiredResetTokens() {
+  const now = Date.now();
+  let changed = false;
+
+  for (const [token, record] of Object.entries(PASSWORD_RESET_TOKENS)) {
+    if (!record || Number(record.expiresAt || 0) < now) {
+      delete PASSWORD_RESET_TOKENS[token];
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+async function persistPasswordResetTokens() {
+  await writeJsonObject(PASSWORD_RESET_FILE, PASSWORD_RESET_TOKENS);
 }
 
 async function buildValidatedCart(rawItems) {
@@ -362,6 +423,18 @@ function buildPasswordResetEmailHtml(resetLink) {
   `;
 }
 
+function buildPasswordResetEmailText(resetLink) {
+  return [
+    'Solanki Agencies - Password Reset',
+    '',
+    'We received a request to reset your password.',
+    '',
+    `Reset your password: ${resetLink}`,
+    '',
+    'This link expires in 30 minutes. If you did not request this, please ignore this email.'
+  ].join('\n');
+}
+
 // Middleware to check admin authentication from either admin token or admin user token
 function isAdminAuthenticated(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
@@ -477,12 +550,15 @@ app.post('/api/user/login', async (req, res) => {
 app.post('/api/user/forgot-password', async (req, res) => {
   const email = normalizeEmail(req.body?.email);
   const genericResponse = { ok: true, message: 'If this email is registered, a reset link has been sent.' };
+  const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
 
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
   }
 
   try {
+    pruneExpiredResetTokens();
+
     const user = await findUserByEmail(email);
     if (!user) {
       return res.json(genericResponse);
@@ -494,6 +570,7 @@ app.post('/api/user/forgot-password', async (req, res) => {
       email,
       expiresAt
     };
+    await persistPasswordResetTokens();
 
     const resetLink = `${APP_BASE_URL}/login.html?email=${encodeURIComponent(email)}&resetToken=${encodeURIComponent(token)}`;
 
@@ -502,7 +579,12 @@ app.post('/api/user/forgot-password', async (req, res) => {
         from: RECEIPT_FROM_EMAIL,
         to: email,
         subject: 'Reset your Solanki Agencies password',
+        text: buildPasswordResetEmailText(resetLink),
         html: buildPasswordResetEmailHtml(resetLink)
+      });
+    } else if (isProduction) {
+      return res.status(503).json({
+        error: 'Password reset email service is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS on Render.'
       });
     }
 
@@ -539,6 +621,7 @@ app.post('/api/user/reset-password', async (req, res) => {
 
   if (tokenRecord.expiresAt < Date.now()) {
     delete PASSWORD_RESET_TOKENS[token];
+    await persistPasswordResetTokens();
     return res.status(400).json({ error: 'Reset token has expired' });
   }
 
